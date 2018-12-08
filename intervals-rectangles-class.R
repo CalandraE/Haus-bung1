@@ -92,6 +92,19 @@ check_class <- function(object, expected_class) {
   } else TRUE
 }
 
+### Function get_start_before_end  return TRUE if
+# the first intveral value is smaller than the second
+get_start_before_end <- function(interval_vec){
+  if (NA %in% interval_vec) return(NA) # return NA if a value is missing
+  if (interval_vec[2] < interval_vec[1]) TRUE
+  else FALSE
+}
+
+## test get_start_before_end
+get_start_before_end(c(1,NA)) # returns NA as expected
+get_start_before_end(c(2,3)) # returns false as expected
+get_start_before_end(c(2,-5))# returns true as expected
+
 ## class_error
 
 # # might be useful later
@@ -159,8 +172,8 @@ get_intervals <- function(entry){
     
     # check the matrix has two collumns
     if (!(ncol((entry)) == 2)) {
-      stop(paste(as.character(bquote(entry)), "has the incorrect number of columns: 
-2 are expected as every Interval needs a start and an end value"))
+      stop(paste(as.character(bquote(entry)), "has the incorrect number of columns:
+                2 are expected as every Interval needs a start and an end value"))
     }
     
     ### check type is nummeric
@@ -169,10 +182,11 @@ get_intervals <- function(entry){
     
     ### check start is smaller than end
     # for each interval check if the start is smaller than the end
-    start_before_end <- all(sapply(1:nrow(entry), function(i){ entry[i,1] < entry[i,2]}))
-    # If this is not true for all rows give an error
-    if (!all(start_before_end,TRUE)) stop("Error in ", as.character(bquote(entry)), 
-                                          " the first value is smaller than the second")
+    start_before_end <- apply(entry, 1, get_start_before_end)
+    # If this is true for any row give an error
+    if (TRUE %in% start_before_end) stop("Error in ", as.character(bquote(entry)), 
+                                          " the first value in each interval 
+                                          must be smaller than the second")
     
     # if all checks have been passed then x must be the right type to make an interval
     entry_int <- Intervals(entry)
@@ -231,9 +245,16 @@ identical(
 # FAILS:
 # The following calls to Rectangles should fail with INFORMATIVE & precise
 # error messages:
-Rectangles(c(-1, -2), c(0, 1)) # returns custom error message
-Rectangles(Intervals(c(0, 1), closed = FALSE), Intervals(c(0, 1)))  # returns custom error message that intervals must be closed
-Rectangles(Intervals(c(0, 1), type = "Z"), Intervals(c(0, 1))) # returns custom error message that intervals may not have type z
-Rectangles(Intervals(c(0, 1), type = "Z", closed), # Returns error message that the interval object is invalid
+Rectangles(c(-1, -2), c(0, 1)) 
+# returns custom error message that the second number must be smaller than the first
+Rectangles(Intervals(c(0, 1), closed = FALSE), Intervals(c(0, 1)))  
+# returns custom error message that intervals must be closed
+Rectangles(Intervals(c(0, 1), type = "Z"), Intervals(c(0, 1)))
+# returns custom error message that intervals may not have type z
+Rectangles(Intervals(c(0, 1), type = "Z", closed),
            Intervals(c(0, 1), type = "Z"))
+# Returns error message that the interval object is invalid
 
+### My fail test 
+Rectangles(Intervals(rbind(0:1, 1:2, 2:3)), Intervals(rbind(0:1, 1:2))) 
+# Returns custom error message that the same number of height and width 
