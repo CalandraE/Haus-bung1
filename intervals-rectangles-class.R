@@ -105,40 +105,23 @@ get_start_before_end(c(1,NA)) # returns NA as expected
 get_start_before_end(c(2,3)) # returns false as expected
 get_start_before_end(c(2,-5))# returns true as expected
 
-## class_error
-
-# # might be useful later
-# check_class_error_list <- function(object, slot_type_list){
-#   # intiate list
-#   error_list <- list()
-#   for (i in 1:length(slot_type_list)) {
-#     class_correct <- check_class(slot(object, names(slot_type_list)[i]), # List elements have the names of the slot
-#                                  expected_class = slot_type_list[[slot]][1]) # List elements are character vectors of accepted classes
-#     if (!class_correct) {
-#       # get values needed for the error message
-#       is_class <- class(slot(object, slot))
-#       should_class <- slot_type_list[[slot]][1]
-#       # add error message to list
-#       error_list[[as.character(slot)]] <- paste("Entry for ", slot, " has class ", is_class,
-#                                                 ". Expected Class(es):", should_class)
-#     }
-#   }
-#   error_list # error list is returned even if its empty
-# }
-
 # My tests on check_class
 object1 <- new("Rectangles", x = Intervals(c(0, 1)), y = Intervals(c(1, 2)))
 check_class(slot(object1,"x"), "Intervals") # returns TRUE as expected
 check_class(slot(object1,"x"), "numeric") # returns FALSE as expected
 
-object2 <- new("Rectangles", x = Intervals(rbind(0:1, 1:2)), y = Intervals(rbind(0:1, 1:2)))
+object2 <- new("Rectangles", x = Intervals(rbind(0:1, 1:2)),
+               y = Intervals(rbind(0:1, 1:2)))
 check_class(slot(object2,"x"), "Intervals")
 
 
-### Function get_intervals returns the intervals to make the rectangles in the constructor
+### Function get_intervals returns the intervals to make the rectangles 
+# in the constructor
+
 # If the entry isnt already an interval it:
-# checks if the entries are accepatable returning informative error message if it isn't
-# makes the interval
+# checks if the entries are accepatable
+# otherwise returning informative error message
+# then it makes a new interval
 
 get_intervals <- function(entry){
   # if entry is already an interval that interval is returned.
@@ -172,12 +155,14 @@ get_intervals <- function(entry){
     
     # check the matrix has two collumns
     if (!(ncol((entry)) == 2)) {
-      stop(paste(as.character(bquote(entry)), "has the incorrect number of columns:
+      stop(paste(as.character(bquote(entry)), 
+                 "has the incorrect number of columns:
                 2 are expected as every Interval needs a start and an end value"))
     }
     
     ### check type is nummeric
-    if (!is.numeric(entry)) stop(paste("The elements in", as.character(bquote(entry)), 
+    if (!is.numeric(entry)) stop(paste("The elements in", 
+                                       as.character(bquote(entry)),
                                        "must be nummeric"))
     
     ### check start is smaller than end
@@ -188,9 +173,10 @@ get_intervals <- function(entry){
                                           " the first value in each interval 
                                           must be smaller than the second")
     
-    # if all checks have been passed then x must be the right type to make an interval
+    # if all checks have been passed then x must be the right type
+    # so an interval can be made
     entry_int <- Intervals(entry)
-  } else entry_int <- entry # if x is already an Interval then it is the same as x_int)
+  } else entry_int <- entry # if entry was an interval to begin with it is returned unchanged
   entry_int # return the interval
 }
 
