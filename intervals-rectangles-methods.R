@@ -1,41 +1,186 @@
+library(checkmate)
+install.packages("intervals")
+library(intervals)
 
+
+######################## Methode: Size #############################
+
+
+
+### Looks at code for the show method for intervals objects
+getMethod("show", "Intervals_virtual")
+
+#### Code for the show method for Intervals
+# function(object) 
+# {
+#   cat("Object of class ", class(object), "\n", nrow(object), 
+#       " interval", ifelse(nrow(object) == 1, "", "s"), " over ", 
+#       type(object), ":\n", sep = "")
+#   ints <- as(object, "character")
+#   if (!is.null(rownames(object))) {
+#     fmt <- sprintf("%%%is", max(nchar(rownames(object))))
+#     ints <- paste(sprintf(fmt, rownames(object)), ints)
+#   }
+#   cat(ints, sep = "\n")
+# }
+### With examples
+Intervals1 <- Intervals(rbind(c(1,2)))
+show(Intervals1)
+
+Intervals2 <- Intervals(rbind(c(1,2),c(3,4),c(5,9)))
+show(Intervals2)
+
+Intervals3 <- Intervals(rbind(c(1,2),c(3,4),c(5,9)))
+rownames(Intervals3) <- c("Int1","Int2","Int3")
+show(Intervals3)
+
+####### aimed for represetaion with show for Rechtangels:
+
+## Object of class Rectangles with 3 rectangles:
+## [0, 1] x [0, 2]
+## [-1, 2] x [1, 2]
+## [0, 1] x [-Inf, Inf]
+
+
+### Plan of modification needed to show(Intervals) for Rectangles object
+## command cat...: 
+# replace nrow(object) with nrow(object@x@.Data) (in both places)
+# replace " interval" with " rectangles"
+
+## command ints<-:
+## command if...:
+# turn into seperate function get_ints_with_names
+
+# replace ints with ints_x
+# make a corresponding ints_y
+# fill both with the function get_ints_with_names
+
+## comand cat...:
+# write function that prints withd interval " x "  y interval
+# call for the number of intervals printing each in a row
+
+
+### Function to return intervals as (named) character vector
+get_ints_with_names <- function(object,slot){
+  checkmate::assert_character(slot) # check that slot is given as a character
+  if (!(length(slot)) == 1) stop("slot must have length 1") # do not allow vectors
+  # Modified from show(Intervals):
+  ints <- as(slot(object,slot), "character")
+  # function that gets the row names if there are any
+  if (!is.null(rownames(slot(object,slot)))) {
+    fmt <- sprintf("%%%is", max(nchar(rownames(slot(object,slot)))))
+    ints <- paste(sprintf(fmt, rownames(slot(object,slot))), ints)
+  }
+  ints
+}
+
+### Funciton that pastes the interval of x and y for each Rectangel in a row
+# in the desired form
+get_row_text <- function(x_single_int, y_single_int){
+  # check that the intervals are give as characters
+  checkmate::assert_character(x_single_int)
+  checkmate::assert_character(y_single_int)
+  # make sure only one interval is given at a time
+  if (!(length(x_single_int)) == 1) stop("x_single_int must have length 1")
+  if (!(length(y_single_int)) == 1) stop("y_single_int must have length 1")
+  
+  # return string containing the text to print for each rectangle
+  # eg. [0, 1] x [0, 2]
+  paste(x_single_int, "x", y_single_int, sep = " ")
+}
+
+### My test
+# get some named intervals
+Intervals4 <- Intervals(rbind(c(1,2),c(3,4),c(5,9)))
+rownames(Intervals4) <- c("width1","width2","width3")
+Intervals5 <- Intervals(rbind(c(11,12),c(13,14),c(15,19)))
+rownames(Intervals5) <- c("height1","height2","height3")
+# make a rectangle
+rectangles1 <- Rectangles(Intervals4,Intervals5)
+# test get_ints_with_names -> works as expected
+ints_x1 <- get_ints_with_names(rectangles1,"x") 
+ints_x1 # returns intervals with names
+ints_y1 <- get_ints_with_names(rectangles1,"y") 
+ints_y1 # returns intervals with names
+# tests get_row_text -> works as expected
+get_row_text(ints_x1[1],ints_y1[1]) 
+# prints first rechtangle's intervals in the expected from
+
+### Actual show funktion for rectangles
+show_Rectangles <- function(rectangles){
+  # get character vectors of x and y intervals
+  ints_x <- get_ints_with_names(rectangles,"x")
+  ints_y <- get_ints_with_names(rectangles,"y")
+  
+  # get number of rectangels
+  n <- length(ints_x) 
+  # Note: Rectangels are defined so that length(ints_x) = length(ints_y)
+  
+  # get a vector containing the rows texts for each rectangle
+  rows <- sapply(1:n, function(i) get_row_text(ints_x[i],ints_y[i]))
+  
+  
+  # first row of text
+  cat("Object of class ", class(rectangles), " with ", nrow(rectangles@x@.Data), 
+      " rectangle", ifelse(nrow(rectangles@x@.Data) == 1, "", "s"), 
+      ":\n", sep = "")
+  # print dimensions of all rectanges in a column 
+  cat(rows, sep = "\n")
+}
+
+# my tests
+show_Rectangles(rectangles1) # works with names
+rectangles2 <- Rectangles(rbind(c(1,2),c(2,3)), rbind(c(-1,2),c(2,4)))
+show_Rectangles(rectangles2) # works without names
+
+# set show_Rectangles as the Methode show for Rectangles
+
+setMethod("show", signature(object = "Rectangles"), function(object) {
+  show_Rectangles(object)
+})
+
+# check rectanges are shown in the desiered form
+rectangles1
+rectangles2
+# works for both
 
 ######################## Methode: Size #############################
 
 ##### Plan for size
 
-## Formal Arguments: 1 Rectanges object
+## Formal Arguments: 1 Rectangles object
 
-# Use setMethod to extend the existing generic size to Rectanges
+# Use setMethod to extend the existing generic size to Rectangles
 
-## Calculate the size for each rectanges in the Rectanges object
+## Calculate the size for each Rectangles in the Rectangles object
 ####### Can use size on intervals to get the distance between the two
 ########### Extract one interval of width and the corresponding one of height
-########### Get there size
+########### Get there distance
 ########### Multiply together
 ########### Store in a vector
-## Sum together
+## return vector
 
-## Return: numeric value of sum of size
-
-
-#### Examine Intervals more closely
-matrix1 <- rbind(0:1, 1:2, 2:3)
-intervals1 <- get_intervals(matrix1)
-intervals1
-size(intervals1)
-
-matrix2 <- rbind(c(0,1), c(1,20), c(2,300))
-intervals2 <- get_intervals(matrix2)
-size(intervals2)
-
+## Return: vector with sizes
 
 ######## Code for Size
+
+# Function for finding the breadth of a single interval
+get_distance <- function(start, end){
+  # check that start and end are nummeric
+  assert_numeric(start)
+  assert_numeric(end)
+  
+  # return difference between start and finish 
+  distance <- abs(end - start)
+  
+  distance
+}
+
 # Function to find the size of rectanges
 size_Rectangles <- function(rectangles){
   # return error unless "Rectanges" object is whats is given
-  #if (!check_class(rectangles, "Rectangles")) stop(
-  #  "The function can only be appled to objects of the class Rectangles")
+  if (!check_class(rectangles, "Rectangles")) stop(
+   "The function can only be appled to objects of the class Rectangles")
   
   # Per defintion of the class Rectanges the intervals with height and width must
   # be the same size. So the number of rows in x are the number of individual triangels
@@ -44,7 +189,6 @@ size_Rectangles <- function(rectangles){
   
   # make a vector to hold the sizes of each rechtanges
   size_each <- rep(NA, length = n)
-  
   
   # fill vector with sizes
   for (i in 1:n) {
@@ -63,28 +207,22 @@ size_Rectangles <- function(rectangles){
   as.numeric(size_each) # this converts NAs from NA logical to NA real
 }
 
-get_distance <- function(start, end){
-  # check that start and end are nummeric
-  assert_numeric(start)
-  assert_numeric(end)
-  
-  # return difference between start and finish 
-  distance <- abs(end - start)
-  
-  distance
-}
+
 
 # my test
 
-Rectangles1 <- Rectangles(Intervals(rbind(0:1, 1:2)), Intervals(rbind(0:1, 1:2)))
+Rectangles1 <- Rectangles(Intervals(rbind(0:1, 1:2)), 
+                          Intervals(rbind(0:1, 1:2)))
 size_Rectangles(Rectangles1) # 1,1 as expected (1*1 + 1*1)
 
-Rectangles2 <- Rectangles(Intervals(rbind(c(0,10), c(0,5))), Intervals(rbind(c(0,10), c(0,5))))
+Rectangles2 <- Rectangles(Intervals(rbind(c(0,10), c(0,5))), 
+                          Intervals(rbind(c(0,10), c(0,5))))
 size_Rectangles(Rectangles2) # 100, 25 as expected (10*10 + 5*5)
 
 
 # set size_Rectangles as the Methode Size for Rectangles
 
+# Unlike for show, setMethod only works if a new Generic is defined
 setGeneric("size", function(object) {
   standardGeneric("size")
 })
@@ -103,7 +241,7 @@ rect_na <- Rectangles(c(0, NA), c(1, 2))
 rect_line <- Rectangles(c(0, 0), c(1, 2))
 #-------------------------------------------------------------------------------
 # CHECK: show-method works as expected:
-rect
+rect # works as desired
 ## Object of class Rectangles with 3 rectangles:
 ## [0, 1] x [0, 2]
 ## [-1, 2] x [1, 2]
@@ -119,3 +257,4 @@ all.equal(size(rect_line), 0) # works as desired
 # my test
 rect_na_num <- Rectangles(rbind(c(0, NA), c(1, 2)), rbind(c(0, 5), c(1, 2)))
 all.equal(size(rect_na_num), c(NA_real_,1)) # works as expected
+
