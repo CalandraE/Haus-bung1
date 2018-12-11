@@ -30,7 +30,7 @@ show(Intervals1)
 Intervals2 <- Intervals(rbind(c(1,2),c(3,4),c(5,9)))
 show(Intervals2)
 
-Intervals3 <- Intervals(rbind(c(1,2),c(3,4),c(5,9)))
+Intervals3 <- Intervals(rbind(c(1,3),c(3,5),c(5,9)))
 rownames(Intervals3) <- c("Int1","Int2","Int3")
 show(Intervals3)
 
@@ -108,6 +108,14 @@ get_row_text(ints_x1[1],ints_y1[1])
 
 ### Actual show funktion for rectangles
 show_Rectangles <- function(rectangles){
+  # return error unless "Rectanges" object is whats is given
+  if (!check_class(rectangles, "Rectangles")) stop(
+    "The function can only be appled to objects of the class Rectangles")
+  
+  # Check a valid Rectangles object was given
+  if (!validObject(rectangles)) stop(
+    "This function can only be applied to valid Retangles objects")
+  
   # get character vectors of x and y intervals
   ints_x <- get_ints_with_names(rectangles,"x")
   ints_y <- get_ints_with_names(rectangles,"y")
@@ -181,6 +189,10 @@ size_Rectangles <- function(rectangles){
   # return error unless "Rectanges" object is whats is given
   if (!check_class(rectangles, "Rectangles")) stop(
    "The function can only be appled to objects of the class Rectangles")
+  
+  # Check a valid Rectangles object was given 
+  if (!validObject(rectangles)) stop(
+  "This function can only be applied to valid Retangles objects")
   
   # Per defintion of the class Rectanges the intervals with height and width must
   # be the same size. So the number of rows in x are the number of individual triangels
