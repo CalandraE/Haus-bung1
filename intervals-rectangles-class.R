@@ -2,8 +2,6 @@
 
 ################ A3: Wrecked & Tangled ########################
 
-#install.packages("styler") ## MUST REMOVE BEFORE SUBMISSION
-library(styler) ## MUST REMOVE BEFORE SUBMISSION
 ###### a)
 # Plan:
 # make class Rectanges
@@ -38,6 +36,11 @@ setClass("Rectangles",
            y = new("Intervals", closed = TRUE)
          ),
          validity = function(object){
+           
+           # Exeption allowing for empty Rechtangles objects
+           if ((nrow(object@x@.Data) == 0) &&
+               (nrow(object@x@.Data) == 0)) return(TRUE)
+           
            # create list of error message to be filled later
            error_list <- list()
            
@@ -65,9 +68,7 @@ setClass("Rectangles",
 
 # Funktions used in Validator
 check_closed <- function(object, slot){
-  
   if (!(class(slot(object, slot)) == "Intervals")) stop("check_closed() can only be used on Interval objects")
-  
   # get logical vector of whether the interval of the object is closed
   interval_closed <- slot(slot(object, slot), "closed") # aka object@slot@closed
   all(interval_closed == TRUE) # return logical value of weather all intervals are closed
@@ -101,8 +102,8 @@ get_start_before_end <- function(interval_vec){
 }
 
 ## test get_start_before_end
-get_start_before_end(c(1,NA)) # returns NA as expected
-get_start_before_end(c(2,3)) # returns false as expected
+get_start_before_end(c(1,NA))# returns NA as expected
+get_start_before_end(c(2,3))# returns false as expected
 get_start_before_end(c(2,-5))# returns true as expected
 
 # My tests on check_class
@@ -124,8 +125,13 @@ check_class(slot(object2,"x"), "Intervals")
 # then it makes a new interval
 
 get_intervals <- function(entry){
+
   # if entry is already an interval that interval is returned.
   if (!check_class(entry, "Intervals")) { # otherwise an interval must be made
+   
+    ## exception for empty intervals: 
+    # just return the entry without further evaluaton
+    if (identical(entry, Intervals())) return(entry)
     
     # Other than Intervals the only other acceptable classes of entry are:
     # numeric n x 2 matrixes and numeric length 2 vectors. It may not be type z 
@@ -177,6 +183,8 @@ get_intervals <- function(entry){
     # so an interval can be made
     entry_int <- Intervals(entry)
   } else entry_int <- entry # if entry was an interval to begin with it is returned unchanged
+  
+  
   entry_int # return the interval
 }
 
@@ -196,6 +204,8 @@ get_intervals(matrix3) # gives error wrong number of dimensions as expected
 matrix4 <- rbind(c(3,2), c(1,2))
 get_intervals(matrix4) # gives error first values smaller than second as expected
 
+matrix <- rbind(c(NA,NA), c(NA,NA))
+all(is.na(matrix))
 
 ### Constructor
 Rectangles <- function(x,y){
