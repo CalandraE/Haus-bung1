@@ -1,5 +1,5 @@
 library(checkmate)
-install.packages("intervals")
+# install.packages("intervals")
 library(intervals)
 
 
@@ -60,6 +60,46 @@ show(Intervals3)
 # call for the number of intervals printing each in a row
 
 
+### Funciton for Checking an object is a valid intervals object with 1 interval
+test_single_interval <- function(interval, single = TRUE){
+  name_object <- as.character(substitute(interval))
+  
+  ### Check object is an Intervals object 
+  if (!check_class(interval,"Intervals")) stop(
+    paste(name_object,"must be an Intervals object", sep = " "))
+  
+  ### Check it a valid Intervals objects
+  if (!validObject(interval)) # no stop function required
+    # because if it is not a valid Intervals object then pre-implemented error
+    # messages that fits the type of objects thats given is returned
+    
+    ### Only test if its a single Interval if single is set to TRUE
+    if (single == TRUE) {
+      ### Check it contains a single Interval
+      if (!identical(nrow(interval@.Data), 1)) stop(
+        paste(name_object,"may only contain one Interval", sep = " "))
+    }  
+  
+  
+  ### return nothing (function only does something if there is a problem)
+}
+
+##### my test for is_single_interval
+# pass test
+test_single_interval(Intervals1) #  returns nothing as intended
+# fail tests
+vec <- c(2,3)
+test_single_interval(vec) # returns error: Not of class "Intervals"
+
+fake_int_M <- rbind(c(1,2),c(3,4))
+class(fake_int_M) <- "Intervals"
+test_single_interval(fake_int_M) # returns error message built into Intervals
+
+fake_int_V <- c(1,2)
+class(fake_int_V) <- "Intervals"
+test_single_interval(fake_int_V) # returns different error message
+
+
 ### Function to return intervals as (named) character vector
 get_ints_with_names <- function(object,slot){
   checkmate::assert_character(slot) # check that slot is given as a character
@@ -74,21 +114,21 @@ get_ints_with_names <- function(object,slot){
   ints
 }
 
-### Funciton that pastes the interval of x and y for each Rectangel in a row
+### Funciton that pastes the interval of x and y for each Rectangle in a row
 # in the desired form
 get_row_text <- function(x_single_int, y_single_int){
   
   # If the Itervals is not empty test that its a single Interval
   # Does nothing if no test is nessary
-  if (!identical(x_single_int,Intervals())) test_single_interval(x_single_int)
-  if (!identical(y_single_int,Intervals())) test_single_interval(y_single_int)
+  # if (!identical(x_single_int,Intervals())) test_single_interval(x_single_int)
+  # if (!identical(y_single_int,Intervals())) test_single_interval(y_single_int)
   
-  # # check that the intervals are give as characters
-  # checkmate::assert_character(x_single_int)
-  # checkmate::assert_character(y_single_int)
-  # # make sure only one interval is given at a time
-  # if (!(length(x_single_int)) == 1) stop("x_single_int must have length 1")
-  # if (!(length(y_single_int)) == 1) stop("y_single_int must have length 1")
+  # check that the intervals are give as characters
+  checkmate::assert_character(x_single_int)
+  checkmate::assert_character(y_single_int)
+  # make sure only one interval is given at a time
+  if (!(length(x_single_int)) == 1) stop("x_single_int must have length 1")
+  if (!(length(y_single_int)) == 1) stop("y_single_int must have length 1")
   
   # # Special case: Paste for empty intervals
   # if (identical(x_single_int,Intervals()) && 
@@ -100,44 +140,6 @@ get_row_text <- function(x_single_int, y_single_int){
 }
 
 
-
-### Funciton for Checking an object is a valid intervals object with 1 interval
-test_single_interval <- function(interval){
-  name_object <- as.character(substitute(interval))
-  
-  ### Check object is an Intervals object 
-  if (!check_class(interval,"Intervals")) stop(
-    paste(name_object,"must be an Intervals object", sep = " "))
-  
-  ### Check it a valid Intervals objects
-  if (!validObject(interval)) # no stop function required
-    # because if it is not a valid Intervals object then pre-implemented error
-    # messages that fits the type of objects thats given is returned
-    
-    ### Check it contains a single Interval
-  if (!(nrow(interval@.Data) == 1)) stop(
-    paste(name_object,"may only contain one Interval", sep = " "))
-  
-  ### return nothing (function only does something if there is a problem)
-}
-
-##### my test for is_single_interval
-# pass test
-test_single_interval(Intervals1) #  returns nothing as intended
-# fail tests
-vec <- c(2,3)
-test_single_interval(vec) # returns error: Not of class "Intervals"
-
-##### TEST NOT WORKING AS EXPECTED 
-test_single_interval(Intervals(rbind(c(1,2),c(3,4)))) # returns object -> to may Intervals
-
-fake_int_M <- rbind(c(1,2),c(3,4))
-class(fake_int_M) <- "Intervals"
-test_single_interval(fake_int_M) # returns error message built into Intervals
-
-fake_int_V <- c(1,2)
-class(fake_int_V) <- "Intervals"
-test_single_interval(fake_int_V) # returns different error message
 
 
 
@@ -155,6 +157,7 @@ ints_x1 # returns intervals with names
 ints_y1 <- get_ints_with_names(rectangles1,"y") 
 ints_y1 # returns intervals with names
 # tests get_row_text -> works as expected
+
 get_row_text(ints_x1[1],ints_y1[1]) 
 # prints first rechtangle's intervals in the expected from
 

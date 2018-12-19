@@ -19,7 +19,7 @@
 library(checkmate)
 
 
-install.packages("intervals")
+# install.packages("intervals")
 library(intervals)
 #source("intervals-rectangles-class.R")
 ?intervals
@@ -132,6 +132,7 @@ get_intervals <- function(entry){
     ## exception for empty intervals: 
     # just return the entry without further evaluaton
     if (identical(entry, Intervals())) return(entry)
+
     
     # Other than Intervals the only other acceptable classes of entry are:
     # numeric n x 2 matrixes and numeric length 2 vectors. It may not be type z 
@@ -165,6 +166,10 @@ get_intervals <- function(entry){
                  "has the incorrect number of columns:
                 2 are expected as every Interval needs a start and an end value"))
     }
+    
+    ## exception for Intervals containing NAs
+    # The NA is made to a numeric rather than logical NA
+    if (all(is.na(entry))) return(Intervals(as.numeric(entry)))
     
     ### check type is nummeric
     if (!is.numeric(entry)) stop(paste("The elements in", 
@@ -204,8 +209,9 @@ get_intervals(matrix3) # gives error wrong number of dimensions as expected
 matrix4 <- rbind(c(3,2), c(1,2))
 get_intervals(matrix4) # gives error first values smaller than second as expected
 
-matrix <- rbind(c(NA,NA), c(NA,NA))
-all(is.na(matrix))
+matrix5 <- rbind(c(NA,NA), c(NA,NA))
+get_intervals(matrix5)
+
 
 ### Constructor
 Rectangles <- function(x,y){

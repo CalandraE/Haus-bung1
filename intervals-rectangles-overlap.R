@@ -80,44 +80,6 @@ is.na(Int_NA1) # TRUE
 is.na(Int_NA2) # TRUE -> place of NA is not returned
 is.na(Int1) # correctly identifies that neither end points is NA
 
-### Funciton for Checking an object is a valid intervals object with 1 interval
-test_single_interval <- function(interval){
-  name_object <- as.character(substitute(interval))
-  
-  ### Check object is an Intervals object 
-  if (!check_class(interval,"Intervals")) stop(
-    paste(name_object,"must be an Intervals object", sep = " "))
-  
-  ### Check it a valid Intervals objects
-  if (!validObject(interval)) # no stop function required
-    # because if it is not a valid Intervals object then pre-implemented error
-    # messages that fits the type of objects thats given is returned
-    
-    ### Check it contains a single Interval
-    if (!(nrow(interval@.Data) == 1)) stop(
-      paste(name_object,"may only contain one Interval", sep = " "))
-  
-  ### return nothing (function only does something if there is a problem)
-}
-
-##### my test for is_single_interval
-# pass test
-test_single_interval(Int1) # supposed to work -> returns nothing
-# fail tests
-vec <- c(2,3)
-test_single_interval(vec) # returns error: Not of class "Intervals"
-
-#### Doesnt work as expected
-test_single_interval(Int3) # returns object -> to may Intervals
-
-fake_int_M <- rbind(c(1,2),c(3,4))
-class(fake_int_M) <- "Intervals"
-test_single_interval(fake_int_M) # returns error message built into Intervals
-
-fake_int_V <- c(1,2)
-class(fake_int_V) <- "Intervals"
-test_single_interval(fake_int_V) # returns different error message
-
 ############################### overlap_interval ###############################
 #### Function get the Interval that is the overlap of 2 Intervals
 
@@ -238,7 +200,8 @@ overlap_per_rectangle <- function(endpoints_list) {
   # If in either direction there is no overlap return NAs for all endpoints
   # This comparasion was chosen because overlap_interval returns Interval()
   # when there is no overlap
-  if(identical(O_int_width, Intervals()) || identical(O_int_height, Intervals())){
+  if (identical(O_int_width, Intervals()) || 
+      identical(O_int_height, Intervals())) {
     return(list(width = c(NA,NA), height = c(NA,NA)))
   }
   
@@ -262,25 +225,55 @@ end_list3 <- list(A_width = c(NA,3), A_height = c(4,5),
 
 ############# Test valid Rectangles function
 test_valid_Rectangles <- function(object) {
-  if(!check_class(object, "Rectangles")) stop(paste(as.character(bquote(object))
-                                              , "must be a Rectangles Object"))
-  if(!validObject(object)) stop(paste(as.character(bquote(object))
-                                , "must be a valid Rectangles Object"))
+  if (!check_class(object, "Rectangles")) stop(paste(as.character(bquote(object))
+                                                    , "must be a Rectangles Object"))
+  if (!validObject(object)) stop(paste(as.character(bquote(object))
+                                      , "must be a valid Rectangles Object"))
 }
+
 ## my tests for test_valid_Rectangles
 not_rec <- c(1,2)
-test_valid_Rectangles(not_rec)
-not_rec2 <- not_rec
+test_valid_Rectangles(not_rec)  # error message returned
+not_rec2 <- not_rec 
 class(not_rec2) <- "Rectangles" 
 test_valid_Rectangles(not_rec2) # error message returned
 
+## If the matrices are not the same size the small matrix must be recyled
+match_size <- function(big_matrix, small_matrix){
+  # Idea: bind smaller matrix too ist self so often that it is atleast
+  # as big a the big matrix: then cut off excess rows
+  n <- nrow(big_matrix)
+  m <- nrow(small_matrix)
+  
+  # find how many times the size the small matrix must be increased by to not be
+  # at least as big as the big matrix
+  double_by <- ceiling(n/m)
+  
+  # make a copy of the small matrix to add new verisons to
+  # make it the same as the small matrix
+  small_matrix_bigger <- small_matrix
+  # incease in size double_by -1 times as in the previous step small_matrix_bigger
+  # already has one copy of small_matrix 
+  for (i in 1:double_by - 1) small_matrix_bigger <- rbind(small_matrix_bigger,
+                                                       small_matrix)
+  # cut off final rows to make the same size as the big matrix
+  small_matrix_bigger <- small_matrix_bigger[c(1:n),]
+  
+  small_matrix_bigger
+}
+
+# my test
+match_size(rbind(c(1,2), c(2,3), c(4,5), c(6,7)),rbind(c(1,2), c(2,3)))
+# returns a 4x2 matrix as expected. Recyling the second matrix
+
+match_size(rbind(c(1,2), c(2,3)),rbind(c(1,5), c(2,3)))
+# if they are the same size the second matrix is returned un changed
+
 ############################### Overlap ########################################
 overlap <- function(rectangle_A, rectangle_B){
-  ## Rectangles objects must be valid rectanges and have the same size
+  ## Rectangles objects must be valid rectanges
   test_valid_Rectangles(rectangle_A)
   test_valid_Rectangles(rectangle_B)
-  if(!identical(nrow(rectangle_A@x@.Data),nrow(rectangle_B@x@.Data))) stop(
-    "Only Rectangles objects of the same size can be compaired")
   
   ## Get the coordinates of the endpoint of all rectangeles in A and B
   A_width_matrix <- rectangle_A@x@.Data
@@ -289,19 +282,35 @@ overlap <- function(rectangle_A, rectangle_B){
   B_height_matrix <- rectangle_B@y@.Data
   
   # get the number of rectangles being compaired
-  n <- nrow(A_width_matrix) 
+  n <- max(nrow(A_width_matrix), nrow(B_width_matrix)) 
+  
+  ### Exeption: if A and B are different sizes use match_size
+  ## overwrite the matrice with recyled versions so they are the same size
+  # The width and height matrices for each rectangles obeject
+  # are always the same size as it is required by the class definition
+  # So only dimention needs to be tested
+  
+  if (nrow(A_width_matrix) > nrow(B_width_matrix)) {
+    B_width_matrix <- match_size(A_width_matrix, B_width_matrix)
+    B_height_matrix <- match_size(A_height_matrix, B_height_matrix)
+  }
+  # repeat for case where A is the smaller matrix
+  if (nrow(B_width_matrix) > nrow(A_width_matrix)) {
+    A_width_matrix <- match_size(B_width_matrix, A_width_matrix)
+    A_height_matrix <- match_size(B_height_matrix, A_height_matrix)
+  }
   
   # Matrice of endpoint for the overlap rectangles  
   O_width_matrix <- matrix(NA, nrow = n, ncol = 2)
   O_height_matrix <- matrix(NA, nrow = n, ncol = 2)
   
   ##### Fill with the endpoint of each indiviudal overlap matrix
-  for(i in 1:n){
+  for (i in 1:n) { 
     # Get list with all endpoint coordinates
     endpoints_list <- list(A_width = A_width_matrix[i,], 
-                          A_height = A_height_matrix[i,],
-                          B_width = B_width_matrix[i,], 
-                          B_height =B_height_matrix[i,])
+                           A_height = A_height_matrix[i,],
+                           B_width = B_width_matrix[i,], 
+                           B_height = B_height_matrix[i,])
     # Get endpoints of overlap rectangles
     o_endpoint_list <- overlap_per_rectangle(endpoints_list)
     # write endpoints into matrices
@@ -310,7 +319,7 @@ overlap <- function(rectangle_A, rectangle_B){
   }
   
   #### Make a new Rectanles object containing each overlap rectangle
-  Rectangles(Intervals(O_width_matrix), Intervals(O_height_matrix))
+  Rectangles(O_width_matrix,O_height_matrix)
   
 }
 
@@ -371,7 +380,6 @@ identical(
   overlap(Rectangles(c(0, 1), c(0, 1)),
           Rectangles(c(NA, .5), c(.5, 1))),
   Rectangles(c(.5, .5), c(.5, 1)))
-11
 # ([0, 1]×[0, 2]) ∩ ([2, ?]×[1, 2]) = ∅ (no overlap at all in x direction)
 identical(
   overlap(Rectangles(c(0, 1), c(0, 2)),
@@ -383,11 +391,19 @@ identical(
   overlap(Rectangles(c(0, 1), c(0, NA)),
           Rectangles(c(NA, .5), c(.5, 1))),
   rect_empty)
+### All TRUE :)
+
 #-------------------------------------------------------------------------------
 # FAILS:
 # The following calls should fail with INFORMATIVE & precise error messages:
-overlap(rect)
-overlap(rect, cbind(c(0, 0),c(1, 1)))
-overlap(c(0,1), cbind(c(0, 0),c(1, 1)))
+overlap(rect) # Error: second argument is missing 
+overlap(rect, cbind(c(0, 0),c(1, 1))) # Error: must use Rectangles Objects
+overlap(c(0,1), cbind(c(0, 0),c(1, 1))) # Error: must use Rectangles Objects
+#### These all work as expected
+
+#### I don't understand what the problem is supposed to be here.
+## cbind or rbind both give a 2x2 matrix
+## Also the recyling rule is supposed to be used, because its needed to 
+## pass an earlier test. So I'm not sure what you mean
 overlap(rect,
         Rectangles(cbind(c(0, 0),c(1, 1)), cbind(c(0, 0),c(1, 1))))
