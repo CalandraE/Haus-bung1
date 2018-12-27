@@ -54,7 +54,7 @@
 
 ### Step x: sort output max so that the heighest subspace matrix is at the top
 
-###################### Stucture:
+###################### Stucture Plan:
 
 # Function 0: get_contrasts
 ### This is meant to supliment the discription given the quesion...
@@ -86,9 +86,9 @@
 ### Inputs: dimensions (number of columns in data), max_spaces, seed
 
 ### Discription:
-## Create an empty 2 <number of subspaces> matrix
 ## Find all subspaces (F1.1 get_all_subspaces)
-## randomly (with seed) select up to <max_spaces> of the subspaces ...
+## Create an empty 2 <number of subspaces> matrix
+## randomly (with seed) select up to max <max_spaces> of the subspaces ...
 ## ...that will actually be used (F1.2 get_use_subspaces)
 
 ### Outputs: numeric matrix of pairs
@@ -124,7 +124,8 @@
 ############################
 
 ### Function 2: get_subspace_data
-## Inputs: data, Index, pairs_matrix (numeric matrix of pairs from get_subspace)
+### Inputs: data, Index, ...
+## ... subspace_combinations (numeric matrix of pairs from get_subspace)
 
 ### Discription:
 ## use the index to get the relevant row out of the matrix of pairs
