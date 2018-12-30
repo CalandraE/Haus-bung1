@@ -23,7 +23,7 @@ all_subspaces2
 #############################
 # Function 1.2: get_use_subpaces
 
-get_use_subpaces <- function(all_subspaces, spaces, seed){
+get_use_subpaces <- function(all_subspaces, n_o_spaces, seed){
   ## This function is only called if  <max_spaces> are smaller ... 
   ## ... than the maximum number of subspaces
   ## In this function <max_spaces> subspaces are randomly selected
@@ -36,7 +36,7 @@ get_use_subpaces <- function(all_subspaces, spaces, seed){
   
   ## draws row number with replacing them
   choosen_subspaces_rows <- sample(all_subspaces_rows,
-                                   size = spaces,
+                                   size = n_o_spaces,
                                    replace = FALSE)
   
   ## Return those rows of the subspace combinations choosen in the sample
@@ -45,9 +45,9 @@ get_use_subpaces <- function(all_subspaces, spaces, seed){
 
 ## my tests for get_use_subspaces
 
-use_subspace1.2.1 <- get_use_subpaces(all_subspaces1, spaces = 2, seed = 1)
+use_subspace1.2.1 <- get_use_subpaces(all_subspaces1, n_o_spaces = 2, seed = 1)
 use_subspace1.2.1 # returns as expected only 2 combinations
-use_subspace1.2.2 <- get_use_subpaces(all_subspaces1, spaces = 2, seed = 120)
+use_subspace1.2.2 <- get_use_subpaces(all_subspaces1, n_o_spaces = 2, seed = 120)
 use_subspace1.2.2
 identical(use_subspace1.2.1, use_subspace1.2.2) 
 # As expected with a different seed a different subset of combinations are selected
@@ -55,25 +55,38 @@ identical(use_subspace1.2.1, use_subspace1.2.2)
 ############################
 ##### Function 1: get_subspaces 
 
-get_subspaces <- function(dimensions, max_spaces, seed){
-  all_subspaces <- get_all_subspaces(dimensions)
+get_subspaces <- function(dimensions, max_spaces, seed, spaces){
   
-  #### If <max_spaces> is larger than the total number of subspaces
-  # then all combinations are returned
+  #### If no value for <spaces> was entered into the function then use ...
+  ## ... then get_all_subspaces to get all possible subspaces
+  #### It is possible that the <spaces> entered into the function is ...
+  ## ... bigger than allowed by <max_spaces> this implimentation alows ...
+  ## a random selection of a subset of thoses user given spaces for testing
+  
+  ## If <spaces> are given by the user these form the subspaces from which ...
+  ## ... are randomly selected
+  all_subspaces <- spaces
+  
+  ## if no entry for <spaces> was given the get_all_subspaces function is used
+  if (is.null(all_subspaces)) all_subspaces <- get_all_subspaces(dimensions)
+  
+  #### If <max_spaces> is larger than or equal to the total number of ...
+  # ... subspaces then all combinations are returned
   if (max_spaces >= nrow(all_subspaces)) return(all_subspaces)
   
-  #### otherwise max_space determins the number of combinations explored
-  spaces <- max_spaces
+  ### otherwise max_space determins the number of combinations explored
+  # "number of" is abrevated to n_o 
+  n_o_spaces <- max_spaces
   
   ### Otherwise a subset of combinations choosen randomly are returned
-  get_use_subpaces(all_subspaces, spaces, seed)
+  get_use_subpaces(all_subspaces, n_o_spaces, seed)
 }
 
 ## My tests for get_subspaces
-subspaces1 <- get_subspaces(dimensions = 10, max_spaces = 10, seed = 1)
+subspaces1 <- get_subspaces(dimensions = 10, max_spaces = 10, seed = 1, spaces = NULL)
 subspaces1 # As expected gets 10 randomly choosen combinations
 
-subspaces2 <- get_subspaces(dimensions = 10, max_spaces = 100, seed =  1)
+subspaces2 <- get_subspaces(dimensions = 10, max_spaces = 100, seed =  1, spaces = NULL)
 identical(subspaces2, get_all_subspaces(dimensions = 10))
 # As expected if max_spaces exceeds the number of combinations ...
 # ... all combinations are returned
@@ -94,6 +107,7 @@ get_subspace_data <- function(data, index, subspace_combinations){
 ## my tests: get_subspace_data
 
 grid1 <- matrix(rnorm(5),nrow = 20, ncol = 10)   
+
 #### should still be defined above
 # subspaces1 <- get_subspaces(dimensions = 10, max_spaces = 10, seed = 1)
 subspace_data1 <- get_subspace_data(data = grid1, index = 1, 
@@ -105,9 +119,112 @@ identical(subspace_data1, grid1[,subspaces1[1,]], grid1[,c(2,5)])
 ## As expected all approaches access the same two rows of data
 
 ###############################################################################
+##### Function 3.1: get_which_conditional
+
+get_which_conditional <- function(seed = NULL, index_space, index_draw){
+  
+  # If a seed is given as a user then the seed is set for the random draw
+  if (!is.null(seed)) set.seed((seed*index_space) + index_draw)
+  
+  # Return a randomly return either 1 or 2
+  sample(c(1,2), size = 1)
+}
+
+## my tests: get_which_conditional
+get_which_conditional(seed = 123, index_draw = 1, index_space = 10) # returns 1
+get_which_conditional(seed = 1234, index_draw = 1, index_space = 10) # returns 2
+get_which_conditional(index_draw = 1, index_space = 10) # works without a seed
+
+############################
+##### Function 3.2: get_data_slice
+get_data_slice <- function(subspace_data, conditional_index, slice, 
+                           seed = NULL, index_space, index_draw){
+  #### Order the matrix subspace_data by the conditional variable
+  ## The conditional variable is accessed by finding the column in ...
+  ## ... subspace_data that was specified by conditional_index (1 or 2)
+  ordered_data <- subspace_data[order(subspace_data[,conditional_index]),]
+  
+  # get width of the slice which contains at least <slice> of the data rows
+  slice_width <- ceiling(slice*nrow(ordered_data))
+  
+  # Before a random selection is made a seed can be set
+  if (!is.null(seed)) set.seed((seed*index_space) + index_draw)
+  
+  # Randomly choose the starting point for the slice making sure there ...
+  # ... are still atleast <slice_width> further rows below it
+  starting_point <- sample(c(1:(nrow(ordered_data) - slice_width)), size = 1)
+  
+  # return <slice_width> rows of the ordered dataset starting at <starting_point>
+  # "- 1" because the slice_width includes the starting point row
+  ordered_data[c(starting_point:(starting_point + slice_width - 1)),]
+}
+
+# my tests: get_data_slice
+grid2 <- matrix(rnorm(200*10),nrow = 200, ncol = 10) 
+subspace_data2 <- get_subspace_data(grid2, index = 1, 
+                                    subspace_combinations = subspaces1)
+slice2 <- get_data_slice(subspace_data2, conditional_index = 2, slice = 0.05, 
+               seed = 1234, index_space = 3, index_draw = 1) 
+slice2 
+# returns a slice of the data ordered by the the second column with ...
+# enough rows to contain 0.05 of the rows in the inputed dataset
 
 
 ############################
+##### Function 3.2: get_each_deviation
+get_each_deviation <- function(independant_marginal, independant_conditional,
+                               deviation) {
+  # To allow for the posibility that mulitple methods are given for <devation> ...
+  # ... each method is applied and the results averaged
+  
+  # create vector to store the results in results
+  devation_results <- rep(NA, times = length(deviation))
+  
+  # apply each devation method given to independant_marginal and ...
+  # independant_conditional filling in the results in the devation_results vector
+  
+  for (k in 1:length(deviation)) {
+    # If devation[k] is one of the expected functions then  ...
+    # ... 1 - their p value is reccored. If a custom function is given
+    # then that function is applied
+    
+    # For improved readability the function inputs are abrevated
+    ic <- as.matrix(independant_conditional)
+    im <- as.matrix(independant_marginal)
+    
+    
+    if (!(deviation[k] %in%  c("ks", "cvm", "tw"))) {
+      devation_results[k] <- apply(ic, im, MARGIN = 2, FUN = deviation[k])      
+    } else {
+      switch(deviation[k], "ks" = 1 - stats::ks.test(ic,im)$p.value, ADD NEXT FUNCTIONS
+             
+    } 
+    
+      switch(deviation[k], "ks" = )
+    
+    
+    if (deviation[k] == "ks") test
+    
+    
+    devation_results[k] <- apply(as.matrix(independant_conditional), 
+                          as.matrix(independant_marginal), MARGIN = 2, 
+                          FUN = deviation[k])
+    
+  }
+  
+}
+  
+
+
+  
+# my test: get_each_deviation
+### The inputs are the independant variables (ie column that was not conditioned on)
+### from the whole dataset (marginal) and from the slice (conditional)
+independant_marginal <- subspace_data2[,1] 
+independant_conditional <- slice2[,1] # collumn that was not conditioned on
+
+
+###############################################################################
 ##### Function 0: get_contrasts 
 get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
                           slice = 0.2, draws = 1e2, max_spaces = 4950,
@@ -115,6 +232,8 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
   library(checkmate)
   library(goftest)
   # TODO
+  
+
 }
 
 ###############################################################################

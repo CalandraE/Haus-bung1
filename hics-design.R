@@ -70,7 +70,7 @@
 
 #### For each row in get_subspace
 ## If <spaces> isn't supplied: ...
-####...Get the relevant subset of data for the subspace combination (get_subspace_data)
+####... Get the relevant subset of data for the subspace combination (get_subspace_data)
 ## Calculate the contrasts for the subspace in question (calculate_contrast)
 ## Write the contrast value together with the columns its the subspace ...
 ### into a row in "results"
@@ -81,13 +81,11 @@
 ############################
 
 # Function 1: get_subspaces
-### Only if spaces aren't supplied (is.null(spaces))
 
-### Inputs: dimensions (number of columns in data), max_spaces, seed
+### Inputs: dimensions (number of columns in data), max_spaces, seed, spaces
 
 ### Discription:
-## Find all subspaces (F1.1 get_all_subspaces)
-## Create an empty 2 <number of subspaces> matrix
+## If spaces aren't suplied then find all subspaces (F1.1 get_all_subspaces)
 ## randomly (with seed) select up to max <max_spaces> of the subspaces ...
 ## ...that will actually be used (F1.2 get_use_subspaces)
 
@@ -144,9 +142,9 @@
 ###### repeate <draws> times:
 ## randomly (with seed) get conditional variable (F3.1 get_which_conditional)
 ## get "independant_marginal" the column of <subspace_data> ... 
-## ... not selected by get_which_conditional
-## get the a slice of the dataset containing <slice> of the data of... 
-## ...the conditional variable (selected by get_which_conditional) (F3.2 get_data_slice)
+## ... i.e. the column not selected by get_which_conditional
+## get the a slice of the dataset containing <slice> of the data ordered by the ... 
+## ...conditional variable (selected by get_which_conditional) (F3.2 get_data_slice)
 ## Apply the test(s) in <deviation> ...
 ## ... Get 1-pvalue(s) of the test result (average if there are muliple ones)...
 ## ...(F3.3 get_each_deviation)
@@ -156,7 +154,7 @@
 ###############
 
 # Function 3.1: get_which_conditional
-### Inputs: seed
+### Inputs: seed, index_space, index_draw 
 
 ### Discription
 # Set the seed using a combinaiton of <seed> and the two indexs ...
@@ -169,13 +167,15 @@
 
 # Function 3.2: get_data_slice
 ### Inputs: subspace_data, conditional_index (from get_which_conditional)
-## seed, slice
+## seed, slice, index_space, index_draw ...
+## ... (used to make the seed different for each itteration)
 
 ### Discription:
 ## Order <subspace_data> by <conditional_index> in assending order
 ## get "slice_width"  which is the number of rows the slice should contain ...
-## ... (<slice>*nrows(<subspace_data>))
-## randomly select a "starting_point" for the slice ...
+## ... (<slice>*nrows(<subspace_data>)). Round up so that a <slice> fraction ...
+## of rows are certianly contained data slice
+## randomly (with seed) select a "starting_point" for the slice ...
 ## (between 1 and N (total rows in <subspace_data>) - "slice_width")
 ## get "subspace_slice": a subset <subspace_data> to only containing
 ## the next "slice_width" rows starting from "starting_point"
