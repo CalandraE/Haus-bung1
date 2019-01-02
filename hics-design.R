@@ -61,6 +61,11 @@
 ### ... with a plan of how the outer most function is structured
 
 ### Inputs: data, spaces, deviation, slice, draws, max_spaces, seed
+## NOTE: these inputs are explained above (their discription was ...
+## ... given in the question). I will not explain these again.
+## I will also only explain other Inputs used in the subfunctions once.
+## If the same name is used again as Inputs in other functions ...
+## ... it can be assumed that the same thing is being refered to.
 
 ### Discription:
 # Create an empty 3 x <number of subspaces> matrix ("results") ...
@@ -107,7 +112,7 @@
 
 # Function 1.2: get_use_subpaces
 
-### Inputs: all_subspaces (matrix with all unique subspace combinations ...
+### Inputs: all_subspaces (matrix with all unique subspace combinations, ...
 ## ... from get_all_subspaces), max_spaces, seed
 
 ### Discription:
@@ -122,8 +127,10 @@
 ############################
 
 ### Function 2: get_subspace_data
-### Inputs: data, Index, ...
-## ... subspace_combinations (numeric matrix of pairs from get_subspace)
+
+### Inputs: data, index_space (index number of the space currently being tested),
+### ... subspace_combinations (numeric matrix of dimension pairs ...
+### ... that will be tested, from get_subspace)
 
 ### Discription:
 ## use the index to get the relevant row out of the matrix of pairs
@@ -135,8 +142,8 @@
 
 # Function 3: calculate_contrast
 
-### Inputs: subspace_data (subset of the data containing only the relevant columns...
-# ... from get_subspace_data), slice, deviation, seed, draws
+### Inputs: subspace_data (subset of the data containing only the relevant ... 
+# ... 2 columns, from get_subspace_data), slice, deviation, seed, draws, index_space
 
 ### Discription:
 ###### repeate <draws> times:
@@ -154,7 +161,9 @@
 ###############
 
 # Function 3.1: get_which_conditional
-### Inputs: seed, index_space, index_draw 
+### Inputs: seed, index_space, ...
+### ... index_draw (index number of the draw currently being carried out)
+## NOTE: the indexs are needed to make the seed different for each itteration
 
 ### Discription
 # Set the seed using a combinaiton of <seed> and the two indexs ...
@@ -166,9 +175,9 @@
 ###############
 
 # Function 3.2: get_data_slice
-### Inputs: subspace_data, conditional_index (from get_which_conditional)
-## seed, slice, index_space, index_draw ...
-## ... (used to make the seed different for each itteration)
+### Inputs: subspace_data, conditional_index (the number of the collumn ...
+### ... which is conditioned on, from get_which_conditional)
+### seed, slice, index_space, index_draw
 
 ### Discription:
 ## Order <subspace_data> by <conditional_index> in assending order
@@ -185,8 +194,11 @@
 ###############
 
 # Function 3.3: get_each_deviation
-### Inputs: independant_marginal (created in parent function F3: calculate_contrast),
-## independant_conditional (from F3.2: get_data_slice), deviation
+### Inputs: independant_marginal (vector containig all the data points for ...
+### for the independant variable, From the parent function F3: calculate_contrast),
+### independant_conditional (vector containing the datapoints for the ...
+### ... independant variable contained the data slice,from F3.2: get_data_slice),
+### deviation
 
 ### Discription:
 ## create a vector "devations" the length of <deviation>
