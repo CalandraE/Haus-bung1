@@ -1,3 +1,4 @@
+# install.packages("goftest")
 ###############################################################################
 # Function 1.1: get_all_subspaces
 
@@ -93,11 +94,11 @@ identical(subspaces2, get_all_subspaces(dimensions = 10))
 
 ###############################################################################
 ##### Function 2: get_subspace_data
-get_subspace_data <- function(data, index, subspace_combinations){
+get_subspace_data <- function(data, index_space, subspace_combinations){
   
   # get the column numbers of the relevant combination out of subspace_combinations
-  dim1 <- subspace_combinations[index,1]
-  dim2 <- subspace_combinations[index,2] 
+  dim1 <- subspace_combinations[index_space,1]
+  dim2 <- subspace_combinations[index_space,2] 
   
   ### return the subset of the data containing only these two columns
   data[,c(dim1,dim2)]
@@ -110,7 +111,7 @@ grid1 <- matrix(rnorm(5),nrow = 20, ncol = 10)
 
 #### should still be defined above
 # subspaces1 <- get_subspaces(dimensions = 10, max_spaces = 10, seed = 1)
-subspace_data1 <- get_subspace_data(data = grid1, index = 1, 
+subspace_data1 <- get_subspace_data(data = grid1, index_space = 1, 
                                    subspace_combinations = subspaces1)
 subspace_data1 ## As expected it returns 2 columns from the dataset
 
@@ -161,7 +162,7 @@ get_data_slice <- function(subspace_data, conditional_index, slice,
 
 # my tests: get_data_slice
 grid2 <- matrix(rnorm(200*10),nrow = 200, ncol = 10) 
-subspace_data2 <- get_subspace_data(grid2, index = 1, 
+subspace_data2 <- get_subspace_data(grid2, index_space = 1, 
                                     subspace_combinations = subspaces1)
 slice2 <- get_data_slice(subspace_data2, conditional_index = 2, slice = 0.05, 
                seed = 1234, index_space = 3, index_draw = 1) 
@@ -183,45 +184,71 @@ get_each_deviation <- function(independant_marginal, independant_conditional,
   # apply each devation method given to independant_marginal and ...
   # independant_conditional filling in the results in the devation_results vector
   
+  # For improved readability the function inputs are abrevated
+  ic <- as.matrix(independant_conditional)
+  im <- as.matrix(independant_marginal)
+  
   for (k in 1:length(deviation)) {
     # If devation[k] is one of the expected functions then  ...
     # ... 1 - their p value is reccored. If a custom function is given
     # then that function is applied
     
-    # For improved readability the function inputs are abrevated
-    ic <- as.matrix(independant_conditional)
-    im <- as.matrix(independant_marginal)
-    
-    
     if (!(deviation[k] %in%  c("ks", "cvm", "tw"))) {
       devation_results[k] <- apply(ic, im, MARGIN = 2, FUN = deviation[k])      
-    } else {
-      switch(deviation[k], "ks" = 1 - stats::ks.test(ic,im)$p.value, ADD NEXT FUNCTIONS
-             
-    } 
+    } else       devation_results[k] <-
+        switch(deviation[k] 
+               ,"ks" = 1 - suppressWarnings(stats::ks.test(ic,im, "two.sided"))$p.value
+               ,"cvm" = 1 - goftest::cvm.test(ic, null = ecdf(im))$p.value
+               ,"tw" = 1 - stats::t.test(ic,im, "two.sided")$p.value)
     
-      switch(deviation[k], "ks" = )
+    # Note to the case "cvm": "ecdf(im)" gets the marginal empirical ...
+    # cumulative distribution function of the independant variable.
+    # "goftest::cvm.test" then tests if ic follows the same distrubution
     
-    
-    if (deviation[k] == "ks") test
-    
-    
-    devation_results[k] <- apply(as.matrix(independant_conditional), 
-                          as.matrix(independant_marginal), MARGIN = 2, 
-                          FUN = deviation[k])
+    # Note to the case "ks": suppressWarnings is used to supress the ...
+    # ... message "p-value will be approximate in the presence of ties".
+    # This message is deemed unnessary since the other methods like ...
+    # ... "cvm" will also give approximate results (because it approximates ...
+    # ... the marginal distrbution). Besides the results of mulitple methods ...
+    # ... are averaged anyway.
     
   }
   
+  # return a mean over the deviation method results
+  mean(devation_results)
 }
-  
 
-
-  
-# my test: get_each_deviation
+# my tests: get_each_deviation
 ### The inputs are the independant variables (ie column that was not conditioned on)
 ### from the whole dataset (marginal) and from the slice (conditional)
 independant_marginal <- subspace_data2[,1] 
 independant_conditional <- slice2[,1] # collumn that was not conditioned on
+
+dev1 <- get_each_deviation(independant_marginal, 
+                           independant_conditional, deviation = "ks")
+dev1
+dev2 <- get_each_deviation(independant_marginal, 
+                           independant_conditional, deviation = "cvm")
+dev2 # very differnt results two other two methods
+dev3 <- get_each_deviation(independant_marginal, 
+                           independant_conditional, deviation = "tw")
+dev3
+
+dev4 <- get_each_deviation(independant_marginal, 
+                           independant_conditional, 
+                           deviation = c("ks","cvm","tw"))
+all.equal(dev4,mean(c(dev1,dev2,dev3))) 
+# as expected the funktion returns the mean result of all methods given ...
+# in <deviation>
+
+############################
+##### Function 3: calculate_contrast
+calculate_contrast <- function(subspace_data, slice, deviation, seed = NULL,
+                               draws, index_space){
+  # vector for storing the results of each draw run though
+  draws_results <- rep(NA, times = draws)
+}
+
 
 
 ###############################################################################
@@ -232,7 +259,7 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
   library(checkmate)
   library(goftest)
   # TODO
-  
+  ### INSERT THOUGHER INPUT CHECKS
 
 }
 
