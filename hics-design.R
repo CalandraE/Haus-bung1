@@ -82,11 +82,61 @@
 
 ### Output: "results" (3 x <number of subspaces> matrix)
 
-############################
+###############
+# Function 0.1: check_single_number
 
+### Inputs: argument (name of the argument being checked ie "seed"), 
+### integer (logical value spesifiying if the the number must be an ...
+### ... integer, default = FALSE), 
+### limits (an optional vector with the maximum and minimum size the number ...
+### ... many be, default = NULL)
+
+### Discription:
+## if interger = TRUE then use checkmate to assert argument is an integer
+## check if argument is a single number
+## If limits were given then check if the number is within the numbers ...
+## ... giving an error if it isn't
+
+### Output: none (if the checks fail the whole process ends)
+
+###############
+# Function 0.2: deviation_check
+### Inputs: deviation
+
+### Discription:
+## write the the name of the method used as a character
+## Check if Function returns a single number between 0 and 1
+
+### Output: none (if the checks fail the whole process ends)
+
+###############
+# Function 0.3: modify_data
+### Inputs: data
+
+### Discription:
+## Check all the columns in Data
+## remove if the values aren't numeric
+## also remove if the values in the column are all identical
+
+### Output: data (modified to remove columns)
+
+###############
+# Function 0.4: modify_spaces
+
+### Inputs: spaces
+
+### Discription:
+## If there more than 2 columns remove the excess 
+### (if there are 2 rows the matrix is just transpossed)
+## Remove rows if the contain a value that exceeds the number ...
+## ... of columns in data
+
+### Output: spaces (modified to remove columns and rows)
+
+############################
 # Function 1: get_subspaces
 
-### Inputs: dimensions (number of columns in data), max_spaces, seed, spaces
+### Inputs: dimensions (number of columns in <data>), max_spaces, seed, spaces
 
 ### Discription:
 ## If spaces aren't suplied then find all subspaces (F1.1 get_all_subspaces)
