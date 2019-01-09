@@ -173,14 +173,12 @@ slice2
 
 
 ############################
-##### Function 3.2: get_each_deviation
+##### Function 3.3: get_each_deviation
 get_each_deviation <- function(independant_marginal, independant_conditional,
                                deviation) {
   # To allow for the posibility that mulitple methods are given for <devation> ...
-  # ... each method is applied and the results averaged
+  # ... a vector is alowed as an input but only the first entry is used
   
-  # create vector to store the results in results
-  devation_results <- rep(NA, times = length(deviation))
   
   # apply each devation method given to independant_marginal and ...
   # independant_conditional filling in the results in the devation_results vector
@@ -189,34 +187,32 @@ get_each_deviation <- function(independant_marginal, independant_conditional,
   ic <- as.matrix(independant_conditional)
   im <- as.matrix(independant_marginal)
   
-  for (k in 1:length(deviation)) {
-    # If devation[k] is one of the expected functions then  ...
-    # ... 1 - their p value is reccored. If a custom function is given
-    # then that function is applied
-    
-    if (!(deviation[k] %in%  c("ks", "cvm", "tw"))) {
-      devation_results[k] <- apply(ic, im, MARGIN = 2, FUN = deviation[k])      
-    } else       devation_results[k] <-
-        switch(deviation[k] 
-               ,"ks" = 1 - suppressWarnings(stats::ks.test(ic,im, "two.sided"))$p.value
-               ,"cvm" = 1 - goftest::cvm.test(ic, null = ecdf(im))$p.value
-               ,"tw" = 1 - stats::t.test(ic,im, "two.sided")$p.value)
-    
-    # Note to the case "cvm": "ecdf(im)" gets the marginal empirical ...
-    # cumulative distribution function of the independant variable.
-    # "goftest::cvm.test" then tests if ic follows the same distrubution
-    
-    # Note to the case "ks": suppressWarnings is used to supress the ...
-    # ... message "p-value will be approximate in the presence of ties".
-    # This message is deemed unnessary since the other methods like ...
-    # ... "cvm" will also give approximate results (because it approximates ...
-    # ... the marginal distrbution). Besides the results of mulitple methods ...
-    # ... are averaged anyway.
-    
-  }
+  # If devation[1] is one of the expected functions then  ...
+  # ... 1 - their p value is returned. If a custom function is given
+  # then that function is applied
   
-  # return a mean over the deviation method results
-  mean(devation_results)
+  if (!(deviation[1] %in%  c("ks", "cvm", "tw"))) {
+    return(apply(ic, im, MARGIN = 2, FUN = deviation[1]))
+  } else 
+    return(switch(deviation[1] 
+                  ,"ks" = 
+                    1 - suppressWarnings(stats::ks.test(ic, im, exact = TRUE))$p.value
+                  ,"cvm" = 1 - goftest::cvm.test(ic, null = ecdf(im))$p.value
+                  ,"tw" = 1 - stats::t.test(ic, im, exact = TRUE)$p.value))
+  
+  # Note to the case "cvm": "ecdf(im)" gets the marginal empirical ...
+  # cumulative distribution function of the independant variable.
+  # "goftest::cvm.test" then tests if ic follows the same distrubution
+  
+  # Note to the case "ks": suppressWarnings is used to supress the ...
+  # ... message "p-value will be approximate in the presence of ties".
+  # This message is deemed unnessary since the other methods like ...
+  # ... "cvm" will also give approximate results (because it approximates ...
+  # ... the marginal distrbution). Besides the results of mulitple methods ...
+  # ... are averaged anyway.
+  
+  # }
+
 }
 
 # my tests: get_each_deviation
@@ -235,10 +231,16 @@ dev3 <- get_each_deviation(independant_marginal,
                            independant_conditional, deviation = "tw")
 dev3
 
+ks_user <- function(conditional, marginal) {
+  1 - ks.test(conditional, marginal)$p.value
+}
 dev4 <- get_each_deviation(independant_marginal, 
-                           independant_conditional, 
-                           deviation = c("ks","cvm","tw"))
-all.equal(dev4,mean(c(dev1,dev2,dev3))) 
+                           independant_conditional, deviation = "ks_user")
+dev4
+# dev4 <- get_each_deviation(independant_marginal, 
+#                            independant_conditional, 
+#                            deviation = c("ks","cvm","tw"))
+#all.equal(dev4,mean(c(dev1,dev2,dev3))) 
 # as expected the funktion returns the mean result of all methods given ...
 # in <deviation>
 
@@ -289,15 +291,216 @@ constrast2 <- calculate_contrast(subspace_data2, slice = 0.05, seed = 12345,
 constrast2 
 # As expected for a slightly different seed a slightly different result is given
 
+constrast3 <- calculate_contrast(subspace_data2, slice = 0.05, seed = 1234, 
+                                 index_space = 3, draws = 20, 
+                                 deviation = "ks") 
+identical(constrast1,constrast3) 
+# as expected only the first method in <devation> is used 
+
 ###############################################################################
+
+##### Function 0.1: check_single_number
+check_single_number <- function(argument, interger = FALSE, limits = NULL){
+  if (interger == TRUE) checkmate::assert_integer(argument)
+  
+  # assert_number checks if a single numeric value is given
+  checkmate::assert_number(argument)
+  
+  # given an error message if argument isn't within the limits 
+  # (if there are any)
+  if (!is.null(limits)) {
+    if (!((argument >= limits[1]) && (argument <= limits[2]))) stop(
+      paste(as.character(bquote(argument))," must be in [", limits[1], ","
+                         ,limits[2],"]", sep = "")
+    )
+  }
+}
+### My test: check_single_number
+check_single_number("text") # returns sutible error message
+check_single_number(c(1,2)) # returns sutible error message
+check_single_number(c(1.2), interger = TRUE) # returns sutible error message
+too_big <- 1.2
+check_single_number(too_big, interger = FALSE, limits = c(0,1))
+# returns the expected error message in teh correct form
+
+##### Function 0.2: deviation_check
+deviation_check <- function(deviation){
+  
+  # if a function is given in <deviation> is name in quotes is used
+  if (is.function(deviation)) method <- as.character(bquote(deviation))
+  # If a vector is given the only the first method is used
+  else method <- as.character(deviation[1])
+  
+  # if the deviation function is one of the defaults no further checks are needed
+  if (method %in% c("ks","cvm","tw"))  return() # return nothing
+  
+  # Check that <deviation> is given as a character vector
+  checkmate::assert_character(method)
+  
+  # Create test inputs
+  test_marginal <- as.matrix(rnorm(100, mean = 0, sd = 1))
+  test_conditional <-  as.matrix(rnorm(10, mean = 0, sd = 1))
+  
+  # test if a function can this method is a function
+  ### if the function doesn't exists then a character vector is returned ...
+  ### ... containing the names of Enviroments containing a function of ...
+  ### ... that name. If it has length 0 then the 'function' can't be found ...
+  ### anyware
+  if (length(find(method, mode = "function")) == 0 ) {
+    stop(paste("No function called", as.character(bquote(method)), "exists
+               in any enviroments currently loaded", sep = " "))
+  } 
+
+  
+  # check that the method returns a single numeric value between 0 and 1
+  check_single_number(apply(test_conditional, test_marginal, 
+                            MARGIN = 2, FUN = method))
+}
+#### my test:
+ks_user <- function(conditional, marginal) {
+  1 - ks.test(conditional, marginal)$p.value
+}
+check_deviation1 <- deviation_check("ks_user") 
+# no error message as expected
+
+fail <- function(conditional, marginal){
+  useless1 <- conditional
+  useless2 <- marginal
+  "you suck!"
+}
+check_deviation2 <- deviation_check("fail")
+# As expected the "fail" function isn't accepted as a devation method
+
+#### Function 0.3: modify_data
+modify_data <- function(data){
+  # collumns of the dataframe that are not nummeric should be ignored ...
+  # ... and therefore removed from the dataframe for further use
+  # However a warning should be given
+  
+  # create an empty vector store the column numbers of non numeric columns
+  column_remove <- rep(NA, times = ncol(data))
+  for (i in seq_along(1:ncol(data))) {
+    if (!is.numeric(data[,i])) {
+      column_remove[i] <- i
+      warning(paste("Column",i, "in <data> isn't numeric and has been removed",
+                    sep = " "))
+    }
+    # if all value in a column are the same it is removed and a warning is given
+    if (!(length(unique(data[,i])) > 1)) {
+      column_remove[i] <- i
+      warning(paste("All entries in column", i, "in <data> are exactly the 
+          same, this column was therefore removed", sep = " "))
+    }  
+  }
+  # return the dataset with the column_remove columns (if any) removed
+  data[,which(!(c(1:ncol(data)) %in% column_remove))]
+}
+
+#### my Test: modify_data
+df_examples <- cbind(as.data.frame(examples),
+                     some_factor = gl(10, 10))
+modify_data(df_examples) # removes factors
+
+df_examples2 <- cbind(as.data.frame(examples),
+                      1,2)
+modify_data(df_examples2) # removes repeate columns
+
+df_examples3 <- cbind(as.data.frame(examples),
+                      c("a","b"))
+modify_data(df_examples3) # removes character vectors
+
+#### Function 0.4: modify_spaces
+modify_spaces <- function(spaces, data){
+  # check spaces is a numeric matrix
+  assert_numeric(spaces)
+  assert_matrix(spaces)
+  
+  # specia case: spaces has 2 rows but not 2 columns ...
+  # ... in this case the matrix is transposed
+  if ((nrow(spaces) == 2)  & (ncol(spaces) != 2 )) spaces <- t(spaces)
+  
+  
+  # remove extra columns if there are more than 2
+  spaces <- spaces[,c(1,2)]
+  
+  # Note in some cases earlier transfomations can stop spaces from being a ...
+  # ... matrix, this is reversed here
+  spaces <- as.matrix(spaces)
+  
+  # remove rows containg values that don't correspond to columns in data
+  permitted_numbers <- c(1:ncol(data)) # to identify a colum in data ...
+  # ... the values must be integers between 1 and the total number of columns
+  
+  # vector to record rows being removed
+  row_remove <- rep(NA, times = nrow(spaces)) 
+
+  
+  # test each row
+  for (i in seq_along(1:nrow(spaces))) {
+    # if either value isn't in the permitted numbers then the row number is ...
+    # ... recored
+    if (!all(spaces[i,] %in% permitted_numbers)) {
+      row_remove[i] <- i
+      warning(paste("Some of the values in row", i, "in spaces doesn't 
+                    correspond to a columns in data", sep = " "))
+    } 
+  }
+  
+  # return the dataset with the column_remove columns (if any) removed
+  spaces[which(!(c(1:nrow(spaces)) %in% row_remove)),]  
+  
+}
+
+### my test: modify_spaces
+
+
+######################
 ##### Function 0: get_contrasts 
 get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
                           slice = 0.2, draws = 1e2, max_spaces = 4950,
                           seed = NULL) {
   library(checkmate)
   library(goftest)
-  # TODO
-  ### INSERT THOUGHER INPUT CHECKS
+  
+  ### INPUT CHECKS
+  # must handel the structure of data and spaces
+  #### ie rejecting or modifying were nessary
+  
+  # If data isn't a matrix it must be a data frame object
+  if (!is.matrix(data)) {
+    assert_data_frame(data)
+  }
+  
+  # if data contains any inapproprate columns these are removed
+  data <- modify_data(data)
+  
+  # if less than two columns are left after modification return error
+  if (ncol(data) <= 0) stop("<data> must contain atleast two suitable
+                            columns for a devation to be calculated")
+  
+  # test if all columns in data are (now) numeric
+  # as.matrix is nessary to test if the all remainig columns of the dataframe
+  # ... are now numeric
+  assert_numeric(as.matrix(data))
+  
+  # spaces isn't null it is tested and (potentially) modified 
+  if (!is.null(spaces))   spaces <- modify_spaces(spaces, data)
+  
+  # Check deviation is a function that returns a numeric value with ... 
+  # ... two numeric vectors of different lengths
+  deviation_check(deviation)
+  
+  check_single_number(max_spaces)
+  check_single_number(draws)
+  
+  # If is a seed is given it must be as single integer
+  if (!is.null(seed)) check_single_number(seed)
+  # Slice must be a single number between 0 and 1
+  check_single_number(slice, limits = c(0,1))
+  # slice cannot howeer be 0
+  if (slice == 0) stop("Slice cannot be 0")
+
+  ###### End of tests
   
   ### Get the matrix with all subspaces that will be explored
   subspaces <- get_subspaces(dimensions = ncol(data), max_spaces = max_spaces
@@ -331,123 +534,4 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
   # return the results matrix
   results
 }
-
-###############################################################################
-################################ Official Tests ###############################
-
-set.seed(1212)
-source("hics-get-contrasts.R")
-#simple 2D datasets:
-grid <- as.matrix(expand.grid(x = 1:10, y = 1:10)) + .1 * matrix(rnorm(200), 100, 2)
-grid <- grid[sample(100),]
-line <- cbind(x = 1:100, y = 1:100)
-fuzzy_line <- line + 10 * matrix(rnorm(200), 100, 2)
-examples <- cbind(line, fuzzy_line, grid)
-#-------------------------------------------------------------------------------
-# CHECK: yield sensible results for defaults:
-isTRUE(get_contrasts(grid)$deviation < .2) # doesn't work yet
-isTRUE(get_contrasts(line)$deviation > .9) # is true
-isTRUE(get_contrasts(fuzzy_line)$deviation <
-         get_contrasts(line)$deviation) # is true
-contrasts_examples <- get_contrasts(examples)
-# all subspaces are covered:
-nrow(contrasts_examples) == choose(6, 2) # is true
-# 1st column has smaller column numbers, 2nd the higher ones:
-all(sort(unique(contrasts_examples[, 1])) == 1:(ncol(examples) - 1)) # is true
-all(sort(unique(contrasts_examples[, 2])) == 2:ncol(examples)) # is true
-# rows are sorted high to low according to deviation:
-all(rank(contrasts_examples$deviation) == 15:1) # is true
-#"line" has highest contrast, "grid" has lowest contrast
-all(contrasts_examples[1, 1:2] == c(1, 2)) # doesn't work yet
-all(contrasts_examples[15, 1:2] == c(5, 6)) # is true
-# default deviation is 1 - p-value:
-all(contrasts_examples$deviation > 0 & contrasts_examples$deviation < 1) # is true
-#-------------------------------------------------------------------------------
-# CHECK: yields reproducible results:
-identical(get_contrasts(examples, seed = 12121),
-          get_contrasts(examples, seed = 12121)) # is TRUE
-#-------------------------------------------------------------------------------
-# CHECK: cleans up inputs:
-
-get_contrasts(cbind(grid, NA, 1), seed = 12121) # should trigger warning(s)
-## DOESN'T WORK YET
-identical(get_contrasts(cbind(grid, NA, 1), seed = 12121),
-          get_contrasts(grid, seed = 12121)) ## DOESN'T WORK YET
-#-------------------------------------------------------------------------------
-# CHECK: accepts (and cleans up) data.frames:
-df_examples <- cbind(as.data.frame(examples),
-                     some_factor = gl(10, 10))
-# this should give a warning:
-get_contrasts(df_examples, seed = 12121) ## DOESN'T WORK YET
-# irrelevant columns are ignored/removed:
-identical(get_contrasts(df_examples, seed = 12121),
-          get_contrasts(examples, seed = 12121)) ## DOESN'T WORK YET
-#-------------------------------------------------------------------------------
-# CHECK: implements different types of deviation measures correctly:
-set.seed(122)
-# three_d has strong correlation for (1,2), medium for (1,3), zero for (2, 3)
-sigma <- matrix(c(1,.9, .4, .9, 1, 0, .4, 0, 1), 3, 3)
-
-three_d <- mvtnorm::rmvnorm(500, sigma = sigma)
-# same order of subspaces for different deviations:
-!identical(get_contrasts(three_d, deviation = "cvm", seed = 12121),
-           get_contrasts(three_d, deviation = "ks", seed = 12121)) # is TRUE
-identical(get_contrasts(three_d, deviation = "cvm", seed = 12121)[,1:2],
-          get_contrasts(three_d, deviation = "ks", seed = 12121)[,1:2]) # doesn't work yet
-!identical(get_contrasts(three_d, deviation = "cvm", seed = 12121),
-           get_contrasts(three_d, deviation = "tw", seed = 12121)) # is TRUE
-identical(get_contrasts(three_d, deviation = "cvm", seed = 12121)[,1:2],
-          get_contrasts(three_d, deviation = "tw", seed = 12121)[,1:2]) # doen't work yet
-# accepts user defined functions for deviation:
-ks_user <- function(conditional, marginal) {
-  1 - ks.test(conditional, marginal)$p.value
-}
-identical(get_contrasts(three_d, deviation = ks_user, seed = 12121),
-          get_contrasts(three_d, seed = 12121)) # Doesn't work yet
-#-------------------------------------------------------------------------------
-# CHECK: implements max_spaces arg correctly:
-get_contrasts(examples, max_spaces = 2)
-#above should give an informative warning that not all sub-spaces are explored.
-isTRUE(nrow(get_contrasts(examples, max_spaces = 7)) == 7L)
-#reproducible results:
-identical(get_contrasts(examples, seed = 12121, max_spaces = 3),
-          get_contrasts(examples, seed = 12121, max_spaces = 3)) # is TRUE
-highdim <- matrix(runif(1e4), ncol = 1e3, nrow = 10)
-isTRUE(nrow(get_contrasts(highdim, draws = 1)) == choose(100, 2)) # is TRUE
-#-------------------------------------------------------------------------------
-# CHECK: implements spaces arg correctly:
-identical(get_contrasts(three_d, spaces = combn(1:3, 2), seed = 12121),
-          get_contrasts(three_d, seed = 12121)) # doesn't Work yet
-identical(get_contrasts(three_d, spaces = rbind(2, 3))[1, -3],
-          c(2, 3))  # doesn't Work yet
-get_contrasts(three_d, spaces = cbind(c(3, 2), c(2, 3), c(2, 3))) # doen't work yet
-# above should give an informative warning...
-# ... and remove redundant spaces:
-identical(get_contrasts(three_d, spaces = rbind(2, 3), seed = 12121),
-          get_contrasts(three_d, spaces = cbind(c(3, 2), c(2, 3), c(2, 3)),
-                        seed = 12121)) # doesn't work yet
-#-------------------------------------------------------------------------------
-# FAILS: the calls below should all fail with INFORMATIVE, precise error messages
-get_contrasts(as.character(grid))
-get_contrasts(matrix(1, 10, 10))
-get_contrasts(data.frame(gl(10, 10), gl(5, 20)))
-get_contrasts(line, slice = "a")
-get_contrasts(line, slice = 1*NA)
-get_contrasts(line, slice = 0)
-get_contrasts(line, slice = 2)
-get_contrasts(line, slice = c(1, 2))
-get_contrasts(line, draws = "a")
-get_contrasts(line, draws = 1*NA)
-get_contrasts(line, draws = 0.5)
-get_contrasts(line, draws = c(1, 2))
-get_contrasts(line, deviation = "sk")
-bs <- function(x1, x2) {
-  cat("bs!")
-}
-get_contrasts(line, deviation = bs)
-get_contrasts(examples, max_spaces = "a")
-get_contrasts(examples, max_spaces = NA)
-get_contrasts(examples, max_spaces = -1)
-get_contrasts(examples, spaces = expand.grid(1:2, 1:3))
-get_contrasts(examples, spaces = combn(1:7, 2))
 
