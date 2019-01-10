@@ -104,8 +104,12 @@
 ### Inputs: deviation
 
 ### Discription:
-## write the the name of the method used as a character
+###### Two cases: 
+## 1) deviation is given a name of a function as a character 
+## (check if it exists), return nothing if its one of the defaults
 ## Check if Function returns a single number between 0 and 1
+## 2) deviation is given a function: apply the funciton ...
+## ... and check if it returns a single number between 0 and 1
 
 ### Output: none (if the checks fail the whole process ends)
 
@@ -128,8 +132,10 @@
 ### Discription:
 ## If there more than 2 columns remove the excess 
 ### (if there are 2 rows the matrix is just transpossed)
-## Remove rows if the contain a value that exceeds the number ...
+## Stop if a row contains a value that exceeds the number ...
 ## ... of columns in data
+## Remove rows if both values are identical
+## Remove rows if they contain the same values as previous rows
 
 ### Output: spaces (modified to remove columns and rows)
 
@@ -250,15 +256,18 @@
 ### deviation
 
 ### Discription:
-## create a vector "devations" the length of <deviation>
-### For each entry in <deviation>
-## Apply <deviation>[index] to independant_marginal and independant_conditional
-## Extract the p values of the test
-## get 1-said p value
-## record value in "devations"[index]
-## Average the results in "devations"
+#### Two cases
+## 1) <defiation> is a character vector (length 1 or more)
+## only use the first entry
+## if one of the defaults are given apply the correponding test, ...
+## ... extracting 1-the p value of the test.
+## if its the name of a function defined else where apply that function
+## return the result
+## 2) <defiation> is a function
+## apply that function
+## return the result
 
 ### Note: if <deviation> has the length 1 or a custom function is used it should work fine
 ## as length(Any_Function_name) has the length 1
 
-### Output: Average result (numeric value)
+### Output: numeric value (1-p value of the test)
