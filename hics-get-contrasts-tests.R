@@ -78,7 +78,7 @@ identical(get_contrasts(three_d, deviation = ks_user, seed = 12121),
 # CHECK: implements max_spaces arg correctly:
 get_contrasts(examples, max_spaces = 2)
 #above should give an informative warning that not all sub-spaces are explored.
-## Works
+## Works, and gives warning
 isTRUE(nrow(get_contrasts(examples, max_spaces = 7)) == 7L) # is True
 #reproducible results:
 identical(get_contrasts(examples, seed = 12121, max_spaces = 3),
@@ -90,14 +90,17 @@ isTRUE(nrow(get_contrasts(highdim, draws = 1)) == choose(100, 2)) # is TRUE
 identical(get_contrasts(three_d, spaces = combn(1:3, 2), seed = 12121),
           get_contrasts(three_d, seed = 12121)) # is TRUE
 identical(get_contrasts(three_d, spaces = rbind(2, 3))[1, -3],
-          c(2, 3))  # doesn't Work yet
+          c(2, 3))  
+# doesn't Work yet because get_contrast returns a matrix not a vector
 get_contrasts(three_d, spaces = cbind(c(3, 2), c(2, 3), c(2, 3)))
-# Works as expected
+# Works as expected, with correct warning
 # above should give an informative warning...
 # ... and remove redundant spaces:
 identical(get_contrasts(three_d, spaces = rbind(2, 3), seed = 12121),
           get_contrasts(three_d, spaces = cbind(c(3, 2), c(2, 3), c(2, 3)),
-                        seed = 12121)) # doesn't work yet
+                        seed = 12121)) 
+# is TRUE, with correct warning
+
 #-------------------------------------------------------------------------------
 # FAILS: the calls below should all fail with INFORMATIVE, 
 # precise error messages
@@ -122,6 +125,7 @@ get_contrasts(line, deviation = bs) # returns expected error message
 get_contrasts(examples, max_spaces = "a") # returns expected error message
 get_contrasts(examples, max_spaces = NA) # returns expected error message
 get_contrasts(examples, max_spaces = -1) # returns expected error message
-get_contrasts(examples, spaces = expand.grid(1:2, 1:3)) # doesn't work yet
-get_contrasts(examples, spaces = combn(1:7, 2)) # doesn't work yet
+get_contrasts(examples, spaces = expand.grid(1:2, 1:3)) 
+# returns expected error message
+get_contrasts(examples, spaces = combn(1:7, 2))# returns expected error message
 
