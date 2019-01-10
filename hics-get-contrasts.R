@@ -73,8 +73,9 @@ get_subspaces <- function(dimensions, max_spaces, seed, spaces){
   if (is.null(all_subspaces)) all_subspaces <- get_all_subspaces(dimensions)
   
   #### If <max_spaces> is larger than or equal to the total number of ...
-  # ... subspaces then all combinations are returned
+  # ... subspaces then all combinations are returned. Otherwise give a warning
   if (max_spaces >= nrow(all_subspaces)) return(all_subspaces)
+  else warning("Not all possible subspaces have been explored")
   
   ### otherwise max_space determins the number of combinations explored
   # "number of" is abrevated to n_o 
@@ -415,17 +416,24 @@ modify_spaces <- function(spaces, data){
   assert_numeric(spaces)
   assert_matrix(spaces)
   
-  # specia case: spaces has 2 rows but not 2 columns ...
+  # special case: spaces has 2 rows but not 2 columns ...
   # ... in this case the matrix is transposed
-  if ((nrow(spaces) == 2)  & (ncol(spaces) != 2 )) spaces <- t(spaces)
+  if ((nrow(spaces) == 2)  & (ncol(spaces) != 2 )) { 
+    spaces <- t(spaces)
+    warning("The spaces matrix has been transposed")
+  }
   
-  
-  # remove extra columns if there are more than 2
-  spaces <- spaces[,c(1,2)]
+  # remove extra columns if there are more than 2 and give a warning
+  if (ncol(spaces) > 2) {
+    spaces <- spaces[,c(1,2)]
+    warning(paste("Only the first 2 columns of spaces are used. Column(s):", c(3:ncol(spaces)), 
+                  "have been removed", sep = " "))
+  }
   
   # Note in some cases earlier transfomations can stop spaces from being a ...
-  # ... matrix, this is reversed here
-  spaces <- as.matrix(spaces)
+  # ... matrix, this is reversed here. As matrix Automatically turns vectors ...
+  # ... into n x 1 matrices. It is therefore transposed to get two columns
+  if (!is.matrix(spaces)) spaces <- t(as.matrix(spaces))
   
   # remove rows containg values that don't correspond to columns in data
   permitted_numbers <- c(1:ncol(data)) # to identify a colum in data ...
@@ -440,19 +448,71 @@ modify_spaces <- function(spaces, data){
     # if either value isn't in the permitted numbers then the row number is ...
     # ... recored
     if (!all(spaces[i,] %in% permitted_numbers)) {
+      stop(paste("Some of the values in row", i, "in spaces doesn't 
+correspond to a columns in data. Therefore isn't doesn't correspond to a 
+                 valid subspaces."
+                 , sep = " "))
+    }
+    if (identical(spaces[i,1], spaces[i,2])) {
       row_remove[i] <- i
-      warning(paste("Some of the values in row", i, "in spaces doesn't 
-                    correspond to a columns in data", sep = " "))
-    } 
+      warning(paste("The values in row", i, "in spaces are identical. 
+                    This row was removed.", sep = " "))
+    }
+    
+    # remove redundant rows giving a warning
+    if (i > 1) { # don't use if the loop is on the first row
+      for (j in seq_along(1:(i - 1))) { # apply to all preseding rows
+        # check to see if the two rows contain the same values (any order)
+        if (all(c(spaces[i,1], spaces[i,2]) %in% c(spaces[j,1], spaces[j,2]))) {
+          row_remove[i] <- i
+          warning(paste("The values in row", i, "are the same as row", j,
+                        "there for row i was removed.", sep = " "))
+        }
+      }
+    }
+   
   }
   
-  # return the dataset with the column_remove columns (if any) removed
-  spaces[which(!(c(1:nrow(spaces)) %in% row_remove)),]  
+  # remove rows that need removing
+  spaces <- spaces[which(!(c(1:nrow(spaces)) %in% row_remove)),]
   
+  # if spaces is now a vector it converted to a matrix ...
+  # ... (transposed two get 2 columns)
+  if (!is.matrix(spaces)) spaces <- t(as.matrix(spaces))
+  
+  # to make order of the values in the rows irrelevant they are sorted ...
+  # ... by row
+  spaces <- t(apply(spaces,1,sort))
+  
+  # the now potentally transformed spaces vector is returned
+  spaces
 }
 
 ### my test: modify_spaces
+spaces_needs_transposing <- cbind(c(3, 2), c(2, 3), c(2, 3))
+sigma <- matrix(c(1,.9, .4, .9, 1, 0, .4, 0, 1), 3, 3)
+set.seed(112)
+data1 <- mvtnorm::rmvnorm(100, sigma = sigma)
+modify_spaces(spaces_needs_transposing, data1) 
+# correct shape and correct warning
 
+spaces_1column <- rbind(c(1,2))
+modify_spaces(spaces_1column, data1) # correct shape, warning missing
+
+spaces_extra_columns <- cbind(c(1,2,3),c(2,3,2),c(3,1,1))
+modify_spaces(spaces_extra_columns, data1) # correct shape and correct warning
+
+spaces_invalid_subspace <- cbind(c(1,2), c(3,2))
+modify_spaces(spaces_invalid_subspace, data1) 
+# correct shape and correct warning
+
+spaces_invalid_row <- cbind(c(1,2), c(3,4))
+modify_spaces(spaces_invalid_row, data1) 
+# correct shape and correct warning
+
+spaces_redundant <- rbind(c(1,2),c(2,3),c(1,2),c(2,3))
+modify_spaces(spaces_redundant, data1) 
+# correct shape and correct warning
 
 ######################
 ##### Function 0: get_contrasts 
