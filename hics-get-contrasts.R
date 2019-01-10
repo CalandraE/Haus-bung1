@@ -188,6 +188,9 @@ get_each_deviation <- function(independant_marginal, independant_conditional,
   ic <- as.matrix(independant_conditional)
   im <- as.matrix(independant_marginal)
   
+  # Case 1: deviaton is a character or character vector
+  if (is.character(deviation)) {
+  
   # If devation[1] is one of the expected functions then  ...
   # ... 1 - their p value is returned. If a custom function is given
   # then that function is applied
@@ -212,7 +215,12 @@ get_each_deviation <- function(independant_marginal, independant_conditional,
   # ... the marginal distrbution). Besides the results of mulitple methods ...
   # ... are averaged anyway.
   
-  # }
+  }
+  
+  # Case 2: deviaiton is a test Function
+  
+  # return value of the function
+  deviation(ic,im)
 
 }
 
@@ -238,6 +246,10 @@ ks_user <- function(conditional, marginal) {
 dev4 <- get_each_deviation(independant_marginal, 
                            independant_conditional, deviation = "ks_user")
 dev4
+
+dev5 <- get_each_deviation(independant_marginal, 
+                           independant_conditional, deviation = ks_user)
+dev5
 # dev4 <- get_each_deviation(independant_marginal, 
 #                            independant_conditional, 
 #                            deviation = c("ks","cvm","tw"))
@@ -302,7 +314,7 @@ identical(constrast1,constrast3)
 
 ##### Function 0.1: check_single_number
 check_single_number <- function(argument, interger = FALSE, limits = NULL){
-  if (interger == TRUE) checkmate::assert_integer(argument)
+  if (interger == TRUE) checkmate::assert_int(argument)
   
   # assert_number checks if a single numeric value is given
   checkmate::assert_number(argument)
@@ -327,35 +339,53 @@ check_single_number(too_big, interger = FALSE, limits = c(0,1))
 ##### Function 0.2: deviation_check
 deviation_check <- function(deviation){
   
-  # if a function is given in <deviation> is name in quotes is used
-  if (is.function(deviation)) method <- as.character(bquote(deviation))
-  # If a vector is given the only the first method is used
-  else method <- as.character(deviation[1])
+  # If deviation is given a function name it is processed differently ...
+  # ... to cases where a function itself is given. 
   
-  # if the deviation function is one of the defaults no further checks are needed
-  if (method %in% c("ks","cvm","tw"))  return() # return nothing
+  # if deviaiton is neither a function nor a character (vector) give an error
+  if (!(is.function(deviation) | is.character(deviation))) {
+    stop("deviation must be a function or the name of a function")
+  }
   
-  # Check that <deviation> is given as a character vector
-  checkmate::assert_character(method)
-  
-  # Create test inputs
+  # Create test inputs (used in both cases)
   test_marginal <- as.matrix(rnorm(100, mean = 0, sd = 1))
   test_conditional <-  as.matrix(rnorm(10, mean = 0, sd = 1))
   
-  # test if a function can this method is a function
-  ### if the function doesn't exists then a character vector is returned ...
-  ### ... containing the names of Enviroments containing a function of ...
-  ### ... that name. If it has length 0 then the 'function' can't be found ...
-  ### anyware
-  if (length(find(method, mode = "function")) == 0 ) {
-    stop(paste("No function called", as.character(bquote(method)), "exists
-               in any enviroments currently loaded", sep = " "))
-  } 
-
+  ### Case 1: Function name is given a character (or character vector)
   
-  # check that the method returns a single numeric value between 0 and 1
-  check_single_number(apply(test_conditional, test_marginal, 
-                            MARGIN = 2, FUN = method))
+  # If a vector is given the only the first method is used
+  if (!is.function(deviation)) {
+    method <- deviation[1]
+    
+    # Check that <deviation> is given as a character vector
+    checkmate::assert_character(method)
+    
+    # if the deviation function is one of the defaults no further checks are needed
+    if (method %in% c("ks","cvm","tw"))  return() # return nothing
+    
+    # test if a function with this name exists
+    ### if the function does exists then a character vector is returned ...
+    ### ... containing the names of Enviroments containing a function of ...
+    ### ... that name. If it has length 0 then the 'function' can't be found ...
+    ### anyware
+    
+    if (length(find(method, mode = "function")) == 0 ) {
+      stop(paste("No function called", as.character(bquote(method)), "exists
+                 in any enviroments currently loaded", sep = " "))
+    } 
+    
+    # check that the method returns a single numeric value between 0 and 1
+    check_single_number(apply(test_conditional, test_marginal, 
+                              MARGIN = 2, FUN = method))   
+    
+  } else {
+    # Case 2: a function is given
+    method <- deviation # method is now simply the devation funciton given
+    
+    # check if the method returns a single numeric value between 0 and 1
+    check_single_number(method(test_conditional,test_marginal))
+  }
+  # return nothing: if there are problems the checks would end the function
 }
 #### my test:
 ks_user <- function(conditional, marginal) {
@@ -364,12 +394,18 @@ ks_user <- function(conditional, marginal) {
 check_deviation1 <- deviation_check("ks_user") 
 # no error message as expected
 
+check_deviation2 <- deviation_check(ks_user) 
+# no error message as expected
+
 fail <- function(conditional, marginal){
   useless1 <- conditional
   useless2 <- marginal
   "you suck!"
 }
-check_deviation2 <- deviation_check("fail")
+check_deviation_fail1 <- deviation_check("fail")
+# As expected the "fail" function isn't accepted as a devation method
+
+check_deviation_fail1 <- deviation_check(fail)
 # As expected the "fail" function isn't accepted as a devation method
 
 #### Function 0.3: modify_data
@@ -550,8 +586,8 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
   # ... two numeric vectors of different lengths
   deviation_check(deviation)
   
-  check_single_number(max_spaces)
-  check_single_number(draws)
+  check_single_number(max_spaces, interger = TRUE)
+  check_single_number(draws, interger = TRUE)
   
   # If is a seed is given it must be as single integer
   if (!is.null(seed)) check_single_number(seed)
