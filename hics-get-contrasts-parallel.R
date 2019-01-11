@@ -175,4 +175,12 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
 
 ##### my test: get_contrasts_parallel
 get_contrasts_parallel(three_d, deviation = "tw", seed = 12121)
+# returns expected results
 
+##### speed compare
+system.time(origional <- 
+              get_contrasts_parallel(three_d, deviation = "tw", seed = 12121))
+
+system.time(parallel <- 
+              get_contrasts_parallel(three_d, deviation = "tw", seed = 12121))
+# minimal schneller - immerhin
