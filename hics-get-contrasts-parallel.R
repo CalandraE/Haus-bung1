@@ -55,7 +55,16 @@ get_subspace_deviation(grid1, deviation = "tw", seed = 12121,
                        slice = 0.1, subspaces2, draws =100, index_space = 5)
 # different result for a different row
 
+set.seed(122)
+# three_d has strong correlation for (1,2), medium for (1,3), zero for (2, 3)
+sigma <- matrix(c(1,.9, .4, .9, 1, 0, .4, 0, 1), 3, 3)
+three_d <- mvtnorm::rmvnorm(500, sigma = sigma)
+get_subspace_deviation(three_d, deviation = "tw", seed = 12121, 
+                       slice = 0.1, subspaces = get_all_subspaces(ncol(three_d)), 
+                       draws = 100, index_space = 2)
+
 #####  get_contrasts_parallel 
+
 get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
                           slice = 0.2, draws = 1e2, max_spaces = 4950,
                           seed = NULL) {
@@ -106,12 +115,6 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
   subspaces <- get_subspaces(dimensions = ncol(data), max_spaces = max_spaces
                              ,seed = seed, spaces = spaces)
   
-  ### create a results table for the deviation of each each of these subspaces
-  ## 3 columns are needed to store the number of the columns comprising ...
-  ## ... the subspace as well as the devation calculation
-  results <- data.frame(matrix(NA, ncol = 3, nrow = nrow(subspaces)))
-  colnames(results) <- c("dim1", "dim2", "deviation")
-  
   ########### This step is now being Paralised
   
   ### set up paralliastion
@@ -138,17 +141,38 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
   # fill the results matrix by calculating the devation for indvidual subspaces
   # ... in parallel
   
-  foreach(index_space = seq_len(nrow(subspaces))) %dopar% 
-  {results[index_space,] <- get_subspace_deviation(data, subspaces, deviation, slice, draws, 
+  # foreach here returns a list of vectors, containing the dimension names ...
+  # ... and diviation for each space
+  ## Each of these vectors are created in parallel
+  
+  results_list <- foreach(index_space = seq_len(nrow(subspaces)),
+                          .inorder = FALSE) %dopar% 
+  {#results[index_space,] <- 
+    get_subspace_deviation(data = data, subspaces, deviation, slice, draws, 
                                seed, index_space)}
   
-  # oreder results so that the largest devations are at the top
-  results <- results[order(results$deviation, decreasing = TRUE),]
+  # Stop the paralisation
+  stopCluster(cl = cl)
   
-  # return the results matrix
-  results
+  # the results_list is converted into a matrix
+  results <- matrix(unlist(results_list), ncol = 3, byrow = TRUE)
+  # the matrix is given column names
+  colnames(results) <- c("dim1", "dim2", "deviation")
+  
+  # special case - only one subspace is explored:
+  ## here ordering is unnessary and converts results to a numeric vector
+  ## therefore in this case results is converted from a matrix to a ...
+  ## ... dataframe and returned early
+  if (nrow(results) == 1) return(as.data.frame(results))
+ 
+  # if multiple subspaces results are reorderd so that the largest ...
+  # ... devations are at the top
+  results <- results[order(results[,"deviation"], decreasing = TRUE),]
+  
+  # return the results in form of a dataframe so that "$" works
+  as.data.frame(results)
 }
 
-##### test
+##### my test: get_contrasts_parallel
 get_contrasts_parallel(three_d, deviation = "tw", seed = 12121)
-## RETURNS ONLY NAS
+
