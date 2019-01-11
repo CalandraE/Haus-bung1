@@ -11,7 +11,7 @@ fuzzy_line <- line + 10 * matrix(rnorm(200), 100, 2)
 examples <- cbind(line, fuzzy_line, grid)
 #-------------------------------------------------------------------------------
 # CHECK: yield sensible results for defaults:
-isTRUE(get_contrasts(grid)$deviation < .2) # doesn't work yet
+isTRUE(get_contrasts(grid)$deviation < .2) # is true
 isTRUE(get_contrasts(line)$deviation > .9) # is true
 isTRUE(get_contrasts(fuzzy_line)$deviation <
          get_contrasts(line)$deviation) # is true
@@ -36,7 +36,7 @@ identical(get_contrasts(examples, seed = 12121),
 # CHECK: cleans up inputs:
 
 get_contrasts(cbind(grid, NA, 1), seed = 12121) # should trigger warning(s)
-## DOESN'T WORK YET
+## works, with expected warnings
 identical(get_contrasts(cbind(grid, NA, 1), seed = 12121),
           get_contrasts(grid, seed = 12121)) 
 # is TRUE, with expected warnings
@@ -59,21 +59,20 @@ sigma <- matrix(c(1,.9, .4, .9, 1, 0, .4, 0, 1), 3, 3)
 three_d <- mvtnorm::rmvnorm(500, sigma = sigma)
 # same order of subspaces for different deviations:
 !identical(get_contrasts(three_d, deviation = "cvm", seed = 12121),
-           get_contrasts(three_d, deviation = "ks", seed = 12121)) # is TRUE
+           get_contrasts(three_d, deviation = "ks", seed = 12121))
 identical(get_contrasts(three_d, deviation = "cvm", seed = 12121)[,1:2],
-          get_contrasts(three_d, deviation = "ks", seed = 12121)[,1:2]) 
-# doesn't work yet
+          get_contrasts(three_d, deviation = "ks", seed = 12121)[,1:2])
 !identical(get_contrasts(three_d, deviation = "cvm", seed = 12121),
-           get_contrasts(three_d, deviation = "tw", seed = 12121)) # is TRUE
+           get_contrasts(three_d, deviation = "tw", seed = 12121))
 identical(get_contrasts(three_d, deviation = "cvm", seed = 12121)[,1:2],
-          get_contrasts(three_d, deviation = "tw", seed = 12121)[,1:2]) 
-# doen't work yet
+          get_contrasts(three_d, deviation = "tw", seed = 12121)[,1:2])
+# all now work
 # accepts user defined functions for deviation:
 ks_user <- function(conditional, marginal) {
   1 - ks.test(conditional, marginal)$p.value
 }
 identical(get_contrasts(three_d, deviation = ks_user, seed = 12121),
-          get_contrasts(three_d, seed = 12121)) # Doesn't work yet
+          get_contrasts(three_d, seed = 12121)) # is TRUE
 #-------------------------------------------------------------------------------
 # CHECK: implements max_spaces arg correctly:
 get_contrasts(examples, max_spaces = 2)
