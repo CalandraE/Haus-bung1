@@ -278,10 +278,12 @@ calculate_contrast <- function(subspace_data, slice, deviation, seed = NULL,
     # vector for estimating the distrubtion of the same variable conditioned ...
     # ... on the other
     independant_conditional <- get_data_slice(subspace_data = subspace_data,
-                                              conditional_index = conditional_index,
+                                              conditional_index = 
+                                                conditional_index,
                                               seed = seed, slice = slice,
                                               index_draw = index_draw,
-                                              index_space = index_space)
+                                              index_space = index_space)[
+                                                ,-conditional_index]
     
     # fill the results index with the calculated deviation
     draws_results[index_draw] <- get_each_deviation(
