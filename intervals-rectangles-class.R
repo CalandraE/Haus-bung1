@@ -1,18 +1,20 @@
-
+######### %in% is always the base function in this question
+### This is reset in case Q2 was loaded first
+`%in%` <- base::`%in%`
 
 ################ A3: Wrecked & Tangled ########################
 
 ###### a)
 # Plan:
-# make class Rectanges
+# make class Rectangles
 # slots: 'x' Width (Intervals) and 'y' height (Intervals)
 # validity: height and width must have the same number of entries
 # 
-# Make contructor 
+# Make constructor 
 # if height and width entries aren't intervals to begin with it must 
 # convert them to intervals
-# must include valdity checking to give informative error messages
-# incase type check fails
+# must include validity checking to give informative error messages
+# in case type check fails
 
 # Write checks were possible into external functions
 #install.packages("checkmate")
@@ -24,27 +26,27 @@ library(intervals)
 #source("intervals-rectangles-class.R")
 ?intervals
 
-### Define Rectanges class
+### Define Rectangles class
 setClass("Rectangles",
          slots = c( # height and width are given by intervals
            x = "Intervals",
            y = "Intervals"),
          prototype = list(
-           # closed = TRUE because it was specifed in the quesions that 
-           # only closed intervals are acceptated
+           # closed = TRUE because it was specified in the questions that 
+           # only closed intervals are accepted
            x = new("Intervals", closed = TRUE),
            y = new("Intervals", closed = TRUE)
          ),
          validity = function(object){
            
-           # Exeption allowing for empty Rechtangles objects
+           # Exception allowing for empty Rectangles objects
            if ((nrow(object@x@.Data) == 0) &&
                (nrow(object@x@.Data) == 0)) return(TRUE)
            
            # create list of error message to be filled later
            error_list <- list()
            
-           #### Number of hight and width intervals must match to make rectangles
+           #### Number of height and width intervals must match to make rectangles
            # get the number of height and width intervals
            num_x_interverals <- nrow(object@x@.Data) # number of rows in the matrix defining interval x
            num_y_interverals <- nrow(object@y@.Data)
@@ -57,7 +59,7 @@ setClass("Rectangles",
            if (!check_closed(object, "x")) error_list[["x closed"]] <- "x must be closed"
            if (!check_closed(object, "y")) error_list[["y closed"]] <- "y must be closed"
            
-           ### Intervals must not have type Z (Warning there is a double negative: not not type z means it is type z)
+           ### Intervals must not have type Z (Warning there is a double negative: not type z means it is type z)
            if (!check_type_not_Z(object, "x")) error_list[["x is type Z"]] <- "x must not be type Z"
            if (!check_type_not_Z(object, "y")) error_list[["y is type Z"]] <- "y must not be type Z"
            
@@ -84,17 +86,17 @@ check_type_not_Z <- function(object, slot){
 }
 
 
-### check_class funktion to check wheather the class of a object is the one expected
+### check_class function to check whether the class of a object is the one expected
 check_class <- function(object, expected_class) {
   # If the object doesn't have the expected class FALSE
   # Other wise TRUE
-  if (!(class(object) %in% expected_class)) { # 'in' allows for mulitple accepted classes
+  if (!(class(object) %in% expected_class)) { # 'in' allows for multiple accepted classes
     FALSE
   } else TRUE
 }
 
 ### Function get_start_before_end  return TRUE if
-# the first intveral value is smaller than the second
+# the first interval value is smaller than the second
 get_start_before_end <- function(interval_vec){
   if (NA %in% interval_vec) return(NA) # return NA if a value is missing
   if (interval_vec[2] < interval_vec[1]) TRUE
@@ -119,30 +121,30 @@ check_class(slot(object2,"x"), "Intervals")
 ### Function get_intervals returns the intervals to make the rectangles 
 # in the constructor
 
-# If the entry isnt already an interval it:
-# checks if the entries are accepatable
+# If the entry isn’t already an interval it:
+# checks if the entries are acceptable
 # otherwise returning informative error message
 # then it makes a new interval
 
 get_intervals <- function(entry){
-
+  
   # if entry is already an interval that interval is returned.
   if (!check_class(entry, "Intervals")) { # otherwise an interval must be made
-   
+    
     ## exception for empty intervals: 
-    # just return the entry without further evaluaton
+    # just return the entry without further evaluation
     if (identical(entry, Intervals())) return(entry)
-
+    
     
     # Other than Intervals the only other acceptable classes of entry are:
     # numeric n x 2 matrixes and numeric length 2 vectors. It may not be type z 
     
     ###  Check if entry can be made to a matrix
     # because if Intervals don't reserve a matrix it will try to make one 
-    # it must be tested if thats possible
+    # it must be tested if that’s possible
     
-    #  But first lists are explicity excluded because
-    #  as.matrix(list) returns a list for simplicty this case is excluded
+    #  But first lists are explicitly excluded because
+    #  as.matrix(list) returns a list for simplicity this case is excluded
     if (check_class(entry, "list")) {
       stop(paste("The entry for", as.character(bquote(entry)), 
                  "must be an Interval, Matrix or Vector"))
@@ -153,25 +155,25 @@ get_intervals <- function(entry){
       stop("The entry for x must be an Interval, Matrix or Vector") 
     }  
     
-    # for converence of testing vectors are made to matrices in this step
+    # for convergence of testing vectors are made to matrices in this step
     if (!check_class(entry, "matrix")) { 
       # matrix(vector) lists a values in 1 column with many rows, 
       # its needs transposing as Intervals use n x 2 Matrices.
       entry <- t(matrix(entry))
     }  
     
-    # check the matrix has two collumns
+    # check the matrix has two columns
     if (!(ncol((entry)) == 2)) {
       stop(paste(as.character(bquote(entry)), 
                  "has the incorrect number of columns:
-                2 are expected as every Interval needs a start and an end value"))
+                 2 are expected as every Interval needs a start and an end value"))
     }
     
     ## exception for Intervals containing NAs
     # The NA is made to a numeric rather than logical NA
     if (all(is.na(entry))) return(Intervals(as.numeric(entry)))
     
-    ### check type is nummeric
+    ### check type is numeric
     if (!is.numeric(entry)) stop(paste("The elements in", 
                                        as.character(bquote(entry)),
                                        "must be nummeric"))
@@ -181,21 +183,21 @@ get_intervals <- function(entry){
     start_before_end <- apply(entry, 1, get_start_before_end)
     # If this is true for any row give an error
     if (TRUE %in% start_before_end) stop("Error in ", as.character(bquote(entry)), 
-                                          " the first value in each interval 
-                                          must be smaller than the second")
+                                         " the first value in each interval 
+                                         must be smaller than the second")
     
     # if all checks have been passed then x must be the right type
     # so an interval can be made
     entry_int <- Intervals(entry)
-  } else entry_int <- entry # if entry was an interval to begin with it is returned unchanged
-  
-  
-  entry_int # return the interval
+    } else entry_int <- entry # if entry was an interval to begin with it is returned unchanged
+    
+    
+    entry_int # return the interval
 }
 
 ### my Test on get_intervals
 matrix1 <- rbind(0:1, 1:2, 2:3)
-get_intervals(matrix1) # create interval as exprected
+get_intervals(matrix1) # create interval as expected
 
 vector <- c(1,2) 
 get_intervals(vector) # creates an interval as expected
@@ -211,7 +213,6 @@ get_intervals(matrix4) # gives error first values smaller than second as expecte
 
 matrix5 <- rbind(c(NA,NA), c(NA,NA))
 get_intervals(matrix5)
-
 
 ### Constructor
 Rectangles <- function(x,y){
@@ -259,4 +260,4 @@ Rectangles(Intervals(c(0, 1), type = "Z", closed),
 
 ### My fail test 
 Rectangles(Intervals(rbind(0:1, 1:2, 2:3)), Intervals(rbind(0:1, 1:2))) 
-# Returns custom error message that the same number of height and width 
+# Returns custom error message that the same number of height and width

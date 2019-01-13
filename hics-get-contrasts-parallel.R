@@ -2,32 +2,32 @@ install.packages("foreach")
 install.packages("doParallel")
 
 ##### Plan
-# get_contrasts_parallel is the paralised version of get_contrasts
+# get_contrasts_parallel is the parallelized version of get_contrasts
 # the main change is that the deviation calculation for each row is
-# parallised. This parallisation is set up in get_contrasts_parallel while
-# the actual calcualtion part is therefore outsorced into get_subspace_deviation
-# and called in the paralisation process
+# parallelized. This parallelisation is set up in get_contrasts_parallel while
+# the actual calculation part is therefore outsourced into get_subspace_deviation
+# and then called in the parallelisation process
 
 ####### Function P1: get_subspace_deviation
 
 ### Inputs: data,  deviation, slice, draws, seed (as defined in hics-design)
-## index_space (index recorded the subpace currently being searched), 
+## index_space (index recorded the subspace currently being searched), 
 ## subspaces (matrix of the column number making each subspace, ...
 ## from get_subspace_data)
 
-### Discription:
-## record the column number of the current subpace in the results_subspace vector
+### Description:
+## record the column number of the current subspace in the results_subspace vector
 ## get the data for the subspace
 ## record the deviation for that subspace in results_subspace
 
 ###  Output: results_subspace 
-## (vector containg column number of dim1 and dim2 
-## and the devation of the subspace
+## (vector containing column number of dim1 and dim2 
+## and the deviation of the subspace
 
 
 ######## Function P1: get_subspace_deviation
 get_subspace_deviation <- function(data, subspaces, deviation, slice, draws, 
-                             seed, index_space){
+                                   seed, index_space){
   
   ### empty vector is recorded to hold the results for each row
   results_subspace <- rep(NA, times = 3)
@@ -66,30 +66,30 @@ get_subspace_deviation(three_d, deviation = "tw", seed = 12121,
 #####  get_contrasts_parallel 
 
 get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
-                          slice = 0.2, draws = 1e2, max_spaces = 4950,
-                          seed = NULL) {
+                                   slice = 0.2, draws = 1e2, max_spaces = 4950,
+                                   seed = NULL) {
   library(checkmate)
   library(goftest)
   
   ### INPUT CHECKS
-  # must handel the structure of data and spaces
-  #### ie rejecting or modifying were nessary
+  # must handle the structure of data and spaces
+  #### i.e. rejecting or modifying were necessary
   
   # If data isn't a matrix it must be a data frame object
   if (!is.matrix(data)) {
     assert_data_frame(data)
   }
   
-  # if data contains any inapproprate columns these are removed
+  # if data contains any inappropriate columns these are removed
   data <- modify_data(data)
   
   # if less than two columns are left after modification return error
-  if (ncol(data) <= 0) stop("<data> must contain atleast two suitable
-                            columns for a devation to be calculated")
+  if (ncol(data) <= 0) stop("<data> must contain at least two suitable
+                            columns for a deviation to be calculated")
   
   # test if all columns in data are (now) numeric
-  # as.matrix is nessary to test if the all remainig columns of the dataframe
-  # ... are now numeric
+  # as.matrix is necessary to test if the all remaining columns of the 
+  # ... data frame are now numeric
   assert_numeric(as.matrix(data))
   
   # spaces isn't null it is tested and (potentially) modified 
@@ -106,7 +106,7 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
   if (!is.null(seed)) check_single_number(seed)
   # Slice must be a single number between 0 and 1
   check_single_number(slice, limits = c(0,1))
-  # slice cannot howeer be 0
+  # slice cannot however be 0
   if (slice == 0) stop("Slice cannot be 0")
   
   ###### End of tests
@@ -115,21 +115,21 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
   subspaces <- get_subspaces(dimensions = ncol(data), max_spaces = max_spaces
                              ,seed = seed, spaces = spaces)
   
-  ########### This step is now being Paralised
+  ########### This step is now being parallelized
   
-  ### set up paralliastion
+  ### set up parallelization
   library(foreach)
   library(doParallel)
   
-  ## register paralisation
+  ## register parallelization
   cl <- makePSOCKcluster(2)
   registerDoParallel(cl)
   
   ## set up clusters
-  # Register all variables and functions used in the parallised step
+  # Register all variables and functions used in the parallelized step
   clusterExport(cl = cl, 
                 varlist = c("data", "spaces", "subspaces", "deviation", "slice" 
-                            ,"draws","max_spaces","seed","results",
+                            ,"draws","max_spaces","seed",
                             "get_subspace_deviation","check_single_number",
                             "deviation_check","modify_spaces","get_subspaces"
                             # "get_all_subspaces", "get_use_subpaces",
@@ -138,20 +138,20 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
                             ,"get_each_deviation")
                 ,envir = sys.frame(sys.nframe()))
   
-  # fill the results matrix by calculating the devation for indvidual subspaces
+  # fill the results matrix by calculating the deviation for individual subspaces
   # ... in parallel
   
   # foreach here returns a list of vectors, containing the dimension names ...
-  # ... and diviation for each space
+  # ... and deviation for each space
   ## Each of these vectors are created in parallel
   
   results_list <- foreach(index_space = seq_len(nrow(subspaces)),
                           .inorder = FALSE) %dopar% 
-  {#results[index_space,] <- 
-    get_subspace_deviation(data = data, subspaces, deviation, slice, draws, 
-                               seed, index_space)}
+                          {#results[index_space,] <- 
+                            get_subspace_deviation(data = data, subspaces, deviation, slice, draws, 
+                                                   seed, index_space)}
   
-  # Stop the paralisation
+  # Stop the parallelization
   stopCluster(cl = cl)
   
   # the results_list is converted into a matrix
@@ -160,16 +160,16 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
   colnames(results) <- c("dim1", "dim2", "deviation")
   
   # special case - only one subspace is explored:
-  ## here ordering is unnessary and converts results to a numeric vector
-  ## therefore in this case results is converted from a matrix to a ...
-  ## ... dataframe and returned early
+  ## here ordering is unnecessary and converts results to a numeric vector
+  ## therefore, in this case results is converted from a matrix to a ...
+  ## ... data frame and returned early
   if (nrow(results) == 1) return(as.data.frame(results))
- 
-  # if multiple subspaces results are reorderd so that the largest ...
-  # ... devations are at the top
+  
+  # if multiple subspaces results are reordered so that the largest ...
+  # ... deviations are at the top
   results <- results[order(results[,"deviation"], decreasing = TRUE),]
   
-  # return the results in form of a dataframe so that "$" works
+  # return the results in form of a data frame so that "$" works
   as.data.frame(results)
 }
 
@@ -177,10 +177,10 @@ get_contrasts_parallel <- function(data, spaces = NULL, deviation = c("ks", "cvm
 get_contrasts_parallel(three_d, deviation = "tw", seed = 12121)
 # returns expected results
 
-##### speed compare
-system.time(origional <- 
-              get_contrasts_parallel(three_d, deviation = "tw", seed = 12121))
+##### speed comparison
+system.time(original <- 
+              get_contrasts(three_d, deviation = "tw", seed = 12121))
 
 system.time(parallel <- 
               get_contrasts_parallel(three_d, deviation = "tw", seed = 12121))
-# minimal schneller - immerhin
+# only slightly faster but better than nothing

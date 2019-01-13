@@ -6,8 +6,8 @@
 # The object whose class determines which method is called is in this case ...
 # table, the second term given to the function. 
 # This is unusual as the default is the first term (here x). 
-# However here it is nessary in this case to use the second term given ...
-# ... to the function as it is important that in commard like:
+# However here it is necessary in this case to use the second term given ...
+# ... to the function as it is important that in command like:
 # "number %in% interval" the method for Intervals objects is used not for ...
 # ... numeric vectors (call of first term)
 
@@ -15,8 +15,8 @@
 
 # To ensure functionality with normal inputs remains unchanged, ...
 # ... the new generic is given a default it can reach back on ...
-# ... incase no spesific functions for input class have been defined.
-# This in default method is simply the base impliemtation of `%in%`, ...
+# ... in case no specific functions for input class have been defined.
+# This in default method is simply the base implementation of `%in%`, ...
 # ... which itself calls the generic function match
 
 `%in%.default` <- function(x, table) base::`%in%`(x, table)
@@ -34,7 +34,7 @@ all.equal(c("a", "b", "c") %in% list(c("a", "b", "c"), "a"),
           c("a", "b", "c") %base_in% list(c("a", "b", "c"), "a"))
 ##### All true
 
-######################## c) %in% methode for Intervals ########################
+######################## c) %in% method for Intervals ########################
 
 #################### Plan
 
@@ -50,33 +50,33 @@ all.equal(c("a", "b", "c") %in% list(c("a", "b", "c"), "a"),
 
 ### Accepted length of numbers:
 ## From the tests there are 3 acceptable cases:
-# Case 1: 1 number in numbers and mulitple intevals:
+# Case 1: 1 number in numbers and multiple intervals:
 ### -> test if the number is in each interval
-# Case 2: many numbers and one inteval 
+# Case 2: many numbers and one interval 
 ### -> test if each number is in the interval
 # Case 3: vector numbers has the same length as the number of intervals
 ### -> test one number per interval
 
 ### Not allowed: 
 ## Case 4: length(numbers) > 1 & #intervals > 1 & length(numbers) != #intervals 
-## here its not clear which interval the number should be tested with
+## here it’s not clear which interval the number should be tested with
 ## return error message
 
 ####### Answer to a question in the tests:
 ## So if a character like "a" is given to the function it should fail with an 
-## informative ...
-## ... error message. 
+## informative error message.
 ## As the intervals are always between two numbers it doesn't make sense to ...
 ## ... ask if a character string is within the numeric interval
-## Allowing it as an numbers and just returning FALSE would confuse the user.
+## Allowing it as an input for numbers and just returning FALSE ...
+## ... would confuse the user.
 
 ## Matrices are also not allowed -> return informative error message
 
 ## The function should consider if the interval is open or closed
-## When determing the number is in the interval or not
+## When determine the number is in the interval or not
 
 
-### discription:
+### description:
 # Test numbers if is an acceptable input
 #### (no need to test the class of the intervals object as the ...
 #### ... method wouldn't be called up it wasn't of class intervals)
@@ -92,10 +92,10 @@ all.equal(c("a", "b", "c") %in% list(c("a", "b", "c"), "a"),
 ################ Function: test_number_in_interval
 
 #### Inputs: number (single number), 
-####         interval (Intevals object containing 1 interval)
+####         interval (Intervals object containing 1 interval)
 # i.e. with nrow(interval.Data) == 1
 
-#### Discription:
+#### Description:
 ## Return true if number is less than the upper limit of interval and ...
 ## ... more than the lower limit
 
@@ -116,7 +116,7 @@ all.equal(c("a", "b", "c") %in% list(c("a", "b", "c"), "a"),
 ### Inputs: n_numbers (the length of the numbers vector)
 ###         n_intervals (number of intervals in the Intervals object)
 
-### Discription: 
+### Description: 
 # compaire n_number and n_intervals to determine which of the cases ...
 # defined above apply.
 # If none of the cases apply return an error explaining accepted inputs
@@ -136,20 +136,20 @@ all.equal(c("a", "b", "c") %in% list(c("a", "b", "c"), "a"),
 
 ### Output: results (logical vector of test results)
 
-#################### Implimentation
+#################### Implementation
 
 ############# Function: test_number_in_interval
 test_number_in_interval <- function(number, interval){
   
-  ### if number is na then return no, further evaluation nessary
+  ### if number is NA then return no, further evaluation necessary
   if (is.na(number)) return(NA)
   
   ### if interval has type Z and number is a decimal it fails automatically
   # Explanation:
   # checkmate::check_integerish returns a character string if the object ...
   # ... is not integerish and TRUE if it is. 
-  # Therefore if check_integerish(number) has the class character then number ...
-  # ... has a decimal component.
+  # Therefore if check_integerish(number) has the class character ...
+  # ... then number has a decimal component.
   
   if (interval@type == "Z" && 
       is.character(check_integerish(number))) return(FALSE)
@@ -175,7 +175,7 @@ test_number_in_interval <- function(number, interval){
 test_number_in_interval(5, Intervals(c(1,10))) # returns TRUE as expected
 test_number_in_interval(-5, Intervals(c(1,10))) # returns FAlSE as expected
 test_number_in_interval(10, Intervals(c(1,10), closed = c(FALSE,FALSE))) 
-# returns FAlSE as expected
+# returns FALSE as expected
 test_number_in_interval(10, Intervals(c(1,10), closed = c(FALSE,TRUE))) 
 # returns TRUE as expected
 test_number_in_interval(NA, Intervals(c(1,10)))
@@ -184,20 +184,20 @@ test_number_in_interval(NA, Intervals(c(1,10)))
 #######  Function: get_case
 
 get_case <- function(n_numbers, n_intervals){
-
-  ## case is intially null
+  
+  ## case is initially null
   case <- NULL
   
-  ## compaire n_numbers and n_intervals to determin the case
+  ## compare n_numbers and n_intervals to determine the case
   if ((n_numbers == 1) && (n_intervals > 1)) case <- "case1"
   if ((n_numbers > 1) && (n_intervals == 1)) case <- "case2"
   if (n_numbers == n_intervals) case <- "case3"
   
-  ## if case is still null then it is not an accepable combination
+  ## if case is still null then it is not an acceptable combination
   ## -> give an informative error
   
   if (is.null(case)) stop(paste(
-    "It is not possibe to compaire this combination of numbers and intevals.",
+    "It is not possible to compare this combination of numbers and intervals.",
     " \nOnly the following three cases are acceptable: "
     ,"\n1) numbers has the length 1 ",
     "\n2) intervals contains only 1 interval "
@@ -221,7 +221,7 @@ get_case(3, 2) # error as expected
   
   ### Input tests
   
-  # if intervals contains no intervals (ie is an empty intervals object) ...
+  # if intervals contains no intervals (i.e. is an empty intervals object) ...
   # give an error
   if (nrow(intervals@.Data) == 0) stop("intervals cannot be empty")
   
@@ -239,16 +239,16 @@ get_case(3, 2) # error as expected
   case <- get_case(n_numbers, n_intervals)
   
   # depending on the case a different combination of numbers and intervals ...
-  # ... are tested. The result of these tests are returned
+  # ... are tested. The result of these tests is returned
   results <- switch(case, "case1" = 
-           sapply(c(1:n_intervals),function(x){
-             test_number_in_interval(numbers,intervals[x])})
-         ,"case2" = 
-           sapply(c(1:n_numbers),function(x){
-                    test_number_in_interval(numbers[x],intervals[1])})
-         ,"case3" = 
-           sapply(c(1:n_numbers),function(x){
-             test_number_in_interval(numbers[x],intervals[x])}))
+                      sapply(c(1:n_intervals),function(x){
+                        test_number_in_interval(numbers,intervals[x])})
+                    ,"case2" = 
+                      sapply(c(1:n_numbers),function(x){
+                        test_number_in_interval(numbers[x],intervals[1])})
+                    ,"case3" = 
+                      sapply(c(1:n_numbers),function(x){
+                        test_number_in_interval(numbers[x],intervals[x])}))
   results
 }
 
@@ -262,12 +262,12 @@ ints <- Intervals(cbind(0:1, 1:2))
 
 #### fails has it should. 
 ## Pro: It would be confusing to the user to return fail ...
-## ... it doen't make sense ask if a caharcter string lies between two numbers
+## ... it doesn’t make sense ask if a character string lies between two numbers
 ## con: for single letters like "a" one could get the number of the letter ...
-## ... in the alphabet and see if thats in the interval. This potential ...
+## ... in the alphabet and see if that’s in the interval. This potential ...
 ## ... use case is thereby lost by banning all character inputs.
-#### However I think its more important for a function to be easy to ...
-#### ... understand than to alow for odd special cases
+#### However, I think it’s more important for a function to be easy to ...
+#### ... understand than to allow for odd special cases
 
 
 ######## Tests for Q2.c
@@ -309,12 +309,12 @@ all.equal(0.5 %in% sets,
 "a" %in% ints #should fail or return FALSE? explain pros & cons of your decision.
 #### fails has it should. 
 ## Pro: It would be confusing to the user to return fail ...
-## ... it doen't make sense ask if a caharcter string lies between two numbers
+## ... it doesn’t make sense ask if a character string lies between two numbers
 ## con: for single letters like "a" one could get the number of the letter ...
-## ... in the alphabet and see if thats in the interval. This potential ...
+## ... in the alphabet and see if that’s in the interval. This potential ...
 ## ... use case is thereby lost by banning all character inputs.
-#### However I think its more important for a function to be easy to ...
-#### ... understand than to alow for odd special cases
+#### However I think it’s more important for a function to be easy to ...
+#### ... understand than to allow for odd special cases
 
 # The calls below should fail with informative error messages:
 c(.5, 1.1, 2) %in% ints #should fail # does fail, with expected error message

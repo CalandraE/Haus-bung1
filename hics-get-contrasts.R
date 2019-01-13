@@ -7,10 +7,10 @@ get_all_subspaces <- function(dimensions){
   # Convert dimensions (number of columns) into a vector
   dimensions_vector <- c(1:dimensions)
   
-  # "combn" with 2 gets all the unique combinations of 2 entries in dimensions_vector
+  # "combn" with “2” gets all the unique combinations of 2 entries in dimensions vector
   # It needs to be transposed to get the numbers in the columns
   all_combinations <- t(combn(dimensions_vector, 2)) 
-
+  
   all_combinations
 }
 
@@ -30,7 +30,7 @@ get_use_subpaces <- function(all_subspaces, n_o_spaces, seed){
   ## ... than the maximum number of subspaces
   ## In this function <max_spaces> subspaces are randomly selected
   
-  ## get a vector with the the subspace combination row numbers
+  ## get a vector with the subspace combination row numbers
   all_subspaces_rows <- c(1:nrow(all_subspaces))
   
   ## set seed if the is one as the one given to the function
@@ -41,7 +41,7 @@ get_use_subpaces <- function(all_subspaces, n_o_spaces, seed){
                                    size = n_o_spaces,
                                    replace = FALSE)
   
-  ## Return those rows of the subspace combinations choosen in the sample
+  ## Return those rows of the subspace combinations chosen in the sample
   all_subspaces[choosen_subspaces_rows,]
 }
 
@@ -59,11 +59,11 @@ identical(use_subspace1.2.1, use_subspace1.2.2)
 
 get_subspaces <- function(dimensions, max_spaces, seed, spaces){
   
-  #### If no value for <spaces> was entered into the function then use ...
+  #### If no value for <spaces> was given to the function then use ...
   ## ... then get_all_subspaces to get all possible subspaces
-  #### It is possible that the <spaces> entered into the function is ...
-  ## ... bigger than allowed by <max_spaces> this implimentation alows ...
-  ## a random selection of a subset of thoses user given spaces for testing
+  #### It is possible that the <spaces> given to the function is ...
+  ## ... bigger than allowed by <max_spaces> this implementation allows ...
+  ## a random selection of a subset of those user given spaces
   
   ## If <spaces> are given by the user these form the subspaces from which ...
   ## ... are randomly selected
@@ -77,21 +77,21 @@ get_subspaces <- function(dimensions, max_spaces, seed, spaces){
   if (max_spaces >= nrow(all_subspaces)) return(all_subspaces)
   else warning("Not all possible subspaces have been explored")
   
-  ### otherwise max_space determins the number of combinations explored
+  ### otherwise max_space determines the number of combinations explored
   # "number of" is abrevated to n_o 
   n_o_spaces <- max_spaces
   
-  ### Otherwise a subset of combinations choosen randomly are returned
+  ### Otherwise a subset of combinations chosen randomly are returned
   get_use_subpaces(all_subspaces, n_o_spaces, seed)
 }
 
 ## My tests for get_subspaces
 subspaces1 <- get_subspaces(dimensions = 10, max_spaces = 10, seed = 1, spaces = NULL)
-subspaces1 # As expected gets 10 randomly choosen combinations
+subspaces1 # As expected gets 10 randomly chosen combinations
 
 subspaces2 <- get_subspaces(dimensions = 10, max_spaces = 100, seed =  1, spaces = NULL)
 identical(subspaces2, get_all_subspaces(dimensions = 10))
-# As expected if max_spaces exceeds the number of combinations ...
+# As expected, if max_spaces exceeds the number of combinations ...
 # ... all combinations are returned
 
 ###############################################################################
@@ -114,7 +114,7 @@ grid1 <- matrix(rnorm(5),nrow = 20, ncol = 10)
 #### should still be defined above
 # subspaces1 <- get_subspaces(dimensions = 10, max_spaces = 10, seed = 1)
 subspace_data1 <- get_subspace_data(data = grid1, index_space = 1, 
-                                   subspace_combinations = subspaces1)
+                                    subspace_combinations = subspaces1)
 subspace_data1 ## As expected it returns 2 columns from the dataset
 
 subspaces1[1,] # the first row in subspaces1 refers to columns 2 and 5
@@ -167,75 +167,76 @@ grid2 <- matrix(rnorm(200*10),nrow = 200, ncol = 10)
 subspace_data2 <- get_subspace_data(grid2, index_space = 1, 
                                     subspace_combinations = subspaces1)
 slice2 <- get_data_slice(subspace_data2, conditional_index = 2, slice = 0.05, 
-               seed = 1234, index_space = 3, index_draw = 1) 
+                         seed = 1234, index_space = 3, index_draw = 1) 
 slice2 
-# returns a slice of the data ordered by the the second column with ...
-# enough rows to contain 0.05 of the rows in the inputed dataset
+# returns a slice of the data ordered by the second column with ...
+# enough rows to contain 0.05 of the rows in the inputted dataset
 
 
 ############################
 ##### Function 3.3: get_each_deviation
 get_each_deviation <- function(independant_marginal, independant_conditional,
                                deviation) {
-  # To allow for the posibility that mulitple methods are given for <devation> ...
-  # ... a vector is alowed as an input but only the first entry is used
+  # To allow for the possibility that multiple methods are given for <devation> ...
+  # ... a vector is allowed as an input but only the first entry is used
   
   
-  # apply each devation method given to independant_marginal and ...
+  # apply each deviation method given to independant_marginal and ...
   # independant_conditional filling in the results in the devation_results vector
   
-  # For improved readability the function inputs are abrevated
+  # For improved readability the function inputs are abbreviated
   ic <- as.matrix(independant_conditional)
   im <- as.matrix(independant_marginal)
   
-  # Case 1: deviaton is a character or character vector
+  # Case 1: deviation is a character or character vector
   if (is.character(deviation)) {
-  
-  # If devation[1] is one of the expected functions then  ...
-  # ... 1 - their p value is returned. If a custom function is given
-  # then that function is applied
-  
-  if (!(deviation[1] %in%  c("ks", "cvm", "tw"))) {
-    return(apply(ic, im, MARGIN = 2, FUN = deviation[1]))
-  } else 
-    return(switch(deviation[1] 
-                  ,"ks" = 
-                    1 - suppressWarnings(stats::ks.test(ic, im, exact = TRUE))$p.value
-                  ,"cvm" = 1 - goftest::cvm.test(ic, null = ecdf(im))$p.value
-                  ,"tw" = 1 - stats::t.test(ic, im, exact = TRUE)$p.value))
-  
-  # Note to the case "cvm": "ecdf(im)" gets the marginal empirical ...
-  # cumulative distribution function of the independant variable.
-  # "goftest::cvm.test" then tests if ic follows the same distrubution
-  
-  # Note to the case "ks": suppressWarnings is used to supress the ...
-  # ... message "p-value will be approximate in the presence of ties".
-  # This message is deemed unnessary since the other methods like ...
-  # ... "cvm" will also give approximate results (because it approximates ...
-  # ... the marginal distrbution). Besides the results of mulitple methods ...
-  # ... are averaged anyway.
-  
+    
+    # If deviation[1] is one of the expected functions then  ...
+    # ... 1 - their p value is returned. If a custom function is given
+    # then that function is applied
+    
+    if (!(deviation[1] %in%  c("ks", "cvm", "tw"))) {
+      return(
+        suppressWarnings(apply(ic, im, MARGIN = 2, FUN = deviation[1])))
+    } else 
+      return(switch(deviation[1] 
+                    ,"ks" = 
+                      1 - suppressWarnings(stats::ks.test(ic, im, exact = TRUE))$p.value
+                    ,"cvm" = 1 - goftest::cvm.test(ic, null = ecdf(im))$p.value
+                    ,"tw" = 1 - stats::t.test(ic, im, exact = TRUE)$p.value))
+    
+    # Note to the case "cvm": "ecdf(im)" gets the marginal empirical ...
+    # cumulative distribution function of the independent variable.
+    # "goftest::cvm.test" then tests if “ic” follows the same distribution
+    
+    # Note to the case "ks": suppressWarnings is used to supress the ...
+    # ... message "p-value will be approximate in the presence of ties".
+    # This message is deemed unnecessary since the other methods like ...
+    # ... "cvm" will also give approximate results (because it approximates ...
+    # ... the marginal distribution). Besides the results of multiple methods ...
+    # ... are averaged anyway.
+    
   }
   
-  # Case 2: deviaiton is a test Function
+  # Case 2: deviation is a test Function
   
-  # return value of the function
-  deviation(ic,im)
-
+  # return value of the function - suppressing warnings that might ensue
+  suppressWarnings(deviation(ic,im))
+  
 }
 
 # my tests: get_each_deviation
-### The inputs are the independant variables (ie column that was not conditioned on)
+### The inputs are the independent variables (i.e. column that was not conditioned on)
 ### from the whole dataset (marginal) and from the slice (conditional)
 independant_marginal <- subspace_data2[,1] 
-independant_conditional <- slice2[,1] # collumn that was not conditioned on
+independant_conditional <- slice2[,1] # column that was not conditioned on
 
 dev1 <- get_each_deviation(independant_marginal, 
                            independant_conditional, deviation = "ks")
 dev1
 dev2 <- get_each_deviation(independant_marginal, 
                            independant_conditional, deviation = "cvm")
-dev2 # very differnt results two other two methods
+dev2 # very different results two other two methods
 dev3 <- get_each_deviation(independant_marginal, 
                            independant_conditional, deviation = "tw")
 dev3
@@ -254,7 +255,7 @@ dev5
 #                            independant_conditional, 
 #                            deviation = c("ks","cvm","tw"))
 #all.equal(dev4,mean(c(dev1,dev2,dev3))) 
-# as expected the funktion returns the mean result of all methods given ...
+# as expected the function returns the mean result of all methods given ...
 # in <deviation>
 
 ############################
@@ -270,12 +271,12 @@ calculate_contrast <- function(subspace_data, slice, deviation, seed = NULL,
                                                index_space = index_space,
                                                index_draw = index_draw)
     
-    # vector for estimating the marginal distrebution of the independant variable
-    #### Note: subspace_data has two collumns. The one not conditioned on is ...
-    #### ... therefore the independant variable
+    # vector for estimating the marginal distribution of the independent variable
+    #### Note: subspace_data has two columns. The one not conditioned on is ...
+    #### ... therefore the independent variable
     independant_marginal <- subspace_data[,-conditional_index]
     
-    # vector for estimating the distrubtion of the same variable conditioned ...
+    # vector for estimating the distribution of the same variable conditioned ...
     # ... on the other
     independant_conditional <- get_data_slice(subspace_data = subspace_data,
                                               conditional_index = 
@@ -326,17 +327,17 @@ check_single_number <- function(argument, interger = FALSE, limits = NULL){
   if (!is.null(limits)) {
     if (!((argument >= limits[1]) && (argument <= limits[2]))) stop(
       paste(as.character(bquote(argument))," must be in [", limits[1], ","
-                         ,limits[2],"]", sep = "")
+            ,limits[2],"]", sep = "")
     )
   }
 }
 ### My test: check_single_number
-check_single_number("text") # returns sutible error message
-check_single_number(c(1,2)) # returns sutible error message
-check_single_number(c(1.2), interger = TRUE) # returns sutible error message
+check_single_number("text") # returns suitable error message
+check_single_number(c(1,2)) # returns suitable error message
+check_single_number(c(1.2), interger = TRUE) # returns suitable error message
 too_big <- 1.2
 check_single_number(too_big, interger = FALSE, limits = c(0,1))
-# returns the expected error message in teh correct form
+# returns the expected error message in the correct form
 
 ##### Function 0.2: deviation_check
 deviation_check <- function(deviation){
@@ -366,27 +367,27 @@ deviation_check <- function(deviation){
     if (method %in% c("ks","cvm","tw"))  return() # return nothing
     
     # test if a function with this name exists
-    ### if the function does exists then a character vector is returned ...
-    ### ... containing the names of Enviroments containing a function of ...
+    ### if the function does exist then a character vector is returned ...
+    ### ... containing the names of Environments containing a function of ...
     ### ... that name. If it has length 0 then the 'function' can't be found ...
-    ### anyware
+    ### …. anywhere
     
     if (length(find(method, mode = "function")) == 0 ) {
       stop(paste("No function called", as.character(bquote(method)), "exists
-                 in any enviroments currently loaded", sep = " "))
+                 in any environments currently loaded", sep = " "))
     } 
     
     # check that the method returns a single numeric value between 0 and 1
     check_single_number(apply(test_conditional, test_marginal, 
                               MARGIN = 2, FUN = method))   
     
-  } else {
-    # Case 2: a function is given
-    method <- deviation # method is now simply the devation funciton given
-    
-    # check if the method returns a single numeric value between 0 and 1
-    check_single_number(method(test_conditional,test_marginal))
-  }
+    } else {
+      # Case 2: a function is given
+      method <- deviation # method is now simply the deviation function given
+      
+      # check if the method returns a single numeric value between 0 and 1
+      check_single_number(method(test_conditional,test_marginal))
+    }
   # return nothing: if there are problems the checks would end the function
 }
 #### my test:
@@ -405,18 +406,18 @@ fail <- function(conditional, marginal){
   "you suck!"
 }
 check_deviation_fail1 <- deviation_check("fail")
-# As expected the "fail" function isn't accepted as a devation method
+# As expected the "fail" function isn't accepted as a deviation method
 
 check_deviation_fail1 <- deviation_check(fail)
-# As expected the "fail" function isn't accepted as a devation method
+# As expected the "fail" function isn't accepted as a deviation method
 
 #### Function 0.3: modify_data
 modify_data <- function(data){
-  # collumns of the dataframe that are not nummeric should be ignored ...
-  # ... and therefore removed from the dataframe for further use
+  # columns of the data frame that are not numeric should be ignored ...
+  # ... and therefore removed from the data frame for further use
   # However a warning should be given
   
-  # create an empty vector store the column numbers of non numeric columns
+  # create an empty vector store the column numbers of non-numeric columns
   column_remove <- rep(NA, times = ncol(data))
   for (i in seq_along(1:ncol(data))) {
     if (!is.numeric(data[,i])) {
@@ -424,18 +425,24 @@ modify_data <- function(data){
       warning(paste("Column",i, "in <data> isn't numeric and has been removed",
                     sep = " "))
     }
-    # if all value in a column are the same it is removed and a warning is given
+    # if all value in a column are the same it is removed, and a warning is given
     if (!(length(unique(data[,i])) > 1)) {
       column_remove[i] <- i
       warning(paste("All entries in column", i, "in <data> are exactly the 
-          same, this column was therefore removed", sep = " "))
+                    same, this column was therefore removed", sep = " "))
     }  
-  }
+    }
   # return the dataset with the column_remove columns (if any) removed
   data[,which(!(c(1:ncol(data)) %in% column_remove))]
-}
+  }
 
 #### my Test: modify_data
+grid <- as.matrix(expand.grid(x = 1:10, y = 1:10)) + .1 * matrix(rnorm(200), 100, 2)
+grid <- grid[sample(100),]
+line <- cbind(x = 1:100, y = 1:100)
+fuzzy_line <- line + 10 * matrix(rnorm(200), 100, 2)
+examples <- cbind(line, fuzzy_line, grid)
+
 df_examples <- cbind(as.data.frame(examples),
                      some_factor = gl(10, 10))
 modify_data(df_examples) # removes factors
@@ -468,26 +475,27 @@ modify_spaces <- function(spaces, data){
                   "have been removed", sep = " "))
   }
   
-  # Note in some cases earlier transfomations can stop spaces from being a ...
+  # Note in some cases earlier transformations can stop spaces from being a ...
   # ... matrix, this is reversed here. As matrix Automatically turns vectors ...
   # ... into n x 1 matrices. It is therefore transposed to get two columns
   if (!is.matrix(spaces)) spaces <- t(as.matrix(spaces))
   
-  # remove rows containg values that don't correspond to columns in data
-  permitted_numbers <- c(1:ncol(data)) # to identify a colum in data ...
+  # remove rows containing values that don't correspond to columns in data
+  permitted_numbers <- c(1:ncol(data)) # to identify a column in data ...
   # ... the values must be integers between 1 and the total number of columns
   
   # vector to record rows being removed
   row_remove <- rep(NA, times = nrow(spaces)) 
-
+  
   
   # test each row
   for (i in seq_along(1:nrow(spaces))) {
     # if either value isn't in the permitted numbers then the row number is ...
-    # ... recored
+    # ... recorded
     if (!all(spaces[i,] %in% permitted_numbers)) {
-      stop(paste("Some of the values in row", i, "in spaces doesn't 
-correspond to a columns in data. Therefore isn't doesn't correspond to a 
+      stop(paste("Some of the values in row", i, 
+                 "in spaces doesn't correspond to a columns in data.",
+                 "Therefore, isn't doesn't correspond to a 
                  valid subspaces."
                  , sep = " "))
     }
@@ -499,7 +507,7 @@ correspond to a columns in data. Therefore isn't doesn't correspond to a
     
     # remove redundant rows giving a warning
     if (i > 1) { # don't use if the loop is on the first row
-      for (j in seq_along(1:(i - 1))) { # apply to all preseding rows
+      for (j in seq_along(1:(i - 1))) { # apply to all presiding rows
         # check to see if the two rows contain the same values (any order)
         if (all(c(spaces[i,1], spaces[i,2]) %in% c(spaces[j,1], spaces[j,2]))) {
           row_remove[i] <- i
@@ -508,8 +516,8 @@ correspond to a columns in data. Therefore isn't doesn't correspond to a
         }
       }
     }
-   
-  }
+    
+    }
   
   # remove rows that need removing
   spaces <- spaces[which(!(c(1:nrow(spaces)) %in% row_remove)),]
@@ -522,7 +530,7 @@ correspond to a columns in data. Therefore isn't doesn't correspond to a
   # ... by row
   spaces <- t(apply(spaces,1,sort))
   
-  # the now potentally transformed spaces vector is returned
+  # the now potentially transformed spaces vector is returned
   spaces
 }
 
@@ -546,7 +554,7 @@ modify_spaces(spaces_invalid_subspace, data1)
 
 spaces_invalid_row <- cbind(c(1,2), c(3,4))
 modify_spaces(spaces_invalid_row, data1) 
-# correct shape and correct warning
+# returns an error
 
 spaces_redundant <- rbind(c(1,2),c(2,3),c(1,2),c(2,3))
 modify_spaces(spaces_redundant, data1) 
@@ -561,15 +569,15 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
   library(goftest)
   
   ### INPUT CHECKS
-  # must handel the structure of data and spaces
-  #### ie rejecting or modifying were nessary
+  # must handle the structure of data and spaces
+  #### i.e. rejecting or modifying were necessary
   
   # If data isn't a matrix it must be a data frame object
   if (!is.matrix(data)) {
     assert_data_frame(data)
   }
   
-  # if data contains any inapproprate columns these are removed
+  # if data contains any inappropriate columns these are removed
   data <- modify_data(data)
   
   # if less than two columns are left after modification return error
@@ -577,7 +585,7 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
                             columns for a devation to be calculated")
   
   # test if all columns in data are (now) numeric
-  # as.matrix is nessary to test if the all remainig columns of the dataframe
+  # as.matrix is necessary to test if the all remaining columns of the data frame
   # ... are now numeric
   assert_numeric(as.matrix(data))
   
@@ -595,22 +603,22 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
   if (!is.null(seed)) check_single_number(seed)
   # Slice must be a single number between 0 and 1
   check_single_number(slice, limits = c(0,1))
-  # slice cannot howeer be 0
+  # slice cannot however be 0
   if (slice == 0) stop("Slice cannot be 0")
-
+  
   ###### End of tests
   
   ### Get the matrix with all subspaces that will be explored
   subspaces <- get_subspaces(dimensions = ncol(data), max_spaces = max_spaces
                              , seed = seed, spaces = spaces)
   
-  ### create a results table for the deviation of each each of these subspaces
+  ### create a results table for the deviation of each of these subspaces
   ## 3 columns are needed to store the number of the columns comprising ...
-  ## ... the subspace as well as the devation calculation
+  ## ... the subspace as well as the deviation calculation
   results <- data.frame(matrix(NA, ncol = 3, nrow = nrow(subspaces)))
   colnames(results) <- c("dim1", "dim2", "deviation")
   
-  ### for each subspace the devation is calculated and recorded in the ...
+  ### for each subspace the deviation is calculated and recorded in the ...
   ### ... Results matrix
   for (index_space in seq_along(1:nrow(subspaces))) {
     # recorded the columns number used in the current subspace
@@ -626,7 +634,7 @@ get_contrasts <- function(data, spaces = NULL, deviation = c("ks", "cvm", "tw"),
       subspace_data = subspace_data, slice = slice, deviation = deviation, 
       seed = seed, draws = draws, index_space = index_space)
   }
-  # oreder results so that the largest devations are at the top
+  # order results so that the largest deviations are at the top
   results <- results[order(results$deviation, decreasing = TRUE),]
   
   # return the results matrix

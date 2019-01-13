@@ -7,21 +7,22 @@
 
 # should fail for matrix or vector inputs 
 # -> assert Rectangles object using check_class()
-# also check validty of rectangles objects with validObject()
+# also check validity of rectangles objects with validObject()
 
-# should fail for only one Rectangels object
+# should fail for only one Rectangles object
 # -> insist on two inputs
 
 
-#### Get overlap in the Width and height intervals seperately
-## get Intervals out of retangles
+#### Get overlap in the Width and height intervals separately
+## get Intervals out of Rectangles
 ## find Overlapping intervals
 
 ####( Deal with the NA cases (minimal possible overlap interval)
-## Falls vorhanden Interval grenze in den Anderen Interval liegt dann 
-## den NA grenze gleich das vorhande stellen (breite 0)
-## eg. ([NA,1] x [3,4]) intersect ([1,2] x [3,4])
-## 1 liegt in [1,2] -> NA = 1 anhmen -> Rectangles(c(1,1), c(3,4))
+## In case the Limits of the Interval that does exist lies within …
+## … the other interval the NA is replaced with the value the other …
+# Interval has for that limit (so the overlap Interval has a width of 0)
+## e.g. ([NA,1] x [3,4]) intersect ([1,2] x [3,4])
+## 1 lies in [1,2] -> therefore NA = 1 -> Rectangles(c(1,1), c(3,4))
 # )
 
 #### Test if both intervals overlap
@@ -30,10 +31,10 @@
 
 ### Output: Rectangles object (overlap of input)
 
-########### Investigate funcitons in Intervals
+########### Investigate functions in Intervals
 ?Intervals
 
-### Potentally useful Funktions:
+### Potentially useful Functions:
 # interval_union 
 # reduce # removes Intervals with na end points
 # which_nearest
@@ -65,7 +66,7 @@ Int4 <- Intervals(rbind(c(2,3),c(1,5)))
 interval_union(Int3,Int4) # only seems to merge the second Interval pair
 interval_intersection(Int3,Int4) # Also doesn't work as expected
 
-#### conclusion: Only use methods of Intervals indidually
+#### conclusion: Only use methods of Intervals individually
 
 ### Check behaviour of interval_intersection on NA
 Int_NA1 <- Intervals(c(NA,2)) 
@@ -75,22 +76,22 @@ interval_intersection(Int1,Int_NA1) # no intersections
 interval_intersection(Int1,Int_NA2) # no intersections
 ## -> must be modified before use
 
-## is.na finds wheather an NA is contained in the Intervals bounderies
+## is.na finds whether an NA is contained in the Intervals boundaries
 is.na(Int_NA1) # TRUE
 is.na(Int_NA2) # TRUE -> place of NA is not returned
 is.na(Int1) # correctly identifies that neither end points is NA
 
 ############################### overlap_interval ###############################
-#### Function get the Interval that is the overlap of 2 Intervals
+#### Function gets the Interval that is the overlap of 2 Intervals
 
 ### First here is the Function is needed to deal with cases were there is 1 NA
-
-######### Plan for process_NA_endpoint()
+######### Plan for process_NA_endpoint
 # find na_endpoint
 # check if non_na endpoint is in other interval
 ###### if it isn't return empty Intervals
-# otherwise overwrite na endpoint with the the non_na value
+# otherwise overwrite NA endpoint with the the non_NA value
 
+############## Function process_NA_endpoint
 process_NA_endpoint <- function(na_interval, non_na_interval){
   # Test inputs are valid
   test_single_interval(na_interval)
@@ -119,7 +120,7 @@ process_NA_endpoint <- function(na_interval, non_na_interval){
   na_interval
 }
 
-# my tests process_NA_endpoint 
+# my tests: process_NA_endpoint 
 # pass tests
 process_NA_endpoint(Int_NA1, Int1) # works: returns Interval width 0
 Int5 <- Intervals(c(10,12))
@@ -127,6 +128,7 @@ process_NA_endpoint(Int_NA1, Int5) # works: returns empty Interval
 # fail tests
 process_NA_endpoint(Int_NA1, c(10,11)) # gives informative error message
 
+######### Plan for overlap_interval
 
 overlap_interval <- function(interval_A,interval_B) {
   ###### Check objects given are Intervals
@@ -168,7 +170,7 @@ overlap_interval <- function(interval_A,interval_B) {
   process_NA_endpoint(na_interval = interval_B, non_na_interval = interval_A)
 }
 
-## my tests for overlap_interval()
+## my tests: overlap_interval
 Int_test1 <- Intervals(c(1,3))
 Int_test2 <- Intervals(c(2,4))
 Int_test3 <- Intervals(c(4,6))
@@ -177,18 +179,20 @@ overlap_interval(Int_test1,Int_test3) # returns empty interval
 overlap_interval(Int_test2,Int_NA1) # returns Interval with NA removed
 overlap_interval(Int_NA1,Int_test3) # returns empty interval
 
-# ### Test does naming affect identity -> concusion no
+# ### Test does naming affect identity -> concussion no
 # named_na <- c(NA_real_,NA)
 # names(named_na) <- c("one","two")
 # named_na_int <- Intervals(named_na)
 # identical(Intervals(c(NA_real_,NA)), named_na_int)
 
-############## overlap_per_rectangle get the rectanges of each overlap indivdually
-#### Input: list with 4 endpoint vectors, for height and Width of rectangles A and B
-#### Output: list with 2 endpoint vectors for height and width of the overlap rectanle
+################ Function: overlap_per_rectangle
+###### The function gets the overlap rectangle individually per pair of intervals 
+### Inputs: list with 4 endpoint vectors, for height and Width of rectangles A and B
+### Description: The function gets the overlap rectangle individually per pair of intervals 
+
+### Output: list with 2 endpoint vectors for height and width of the overlap Rectangle
 
 overlap_per_rectangle <- function(endpoints_list) {
-  
   #### Get the overlap respectively for width and height
   # endpoint list contains vectors of endpoints
   # So these must be made to Intervals
@@ -210,7 +214,7 @@ overlap_per_rectangle <- function(endpoints_list) {
   
 }
 
-# my Test for overlap_per_rectangle
+# my Test:  overlap_per_rectangle
 end_list1 <- list(A_width = c(1,3), A_height = c(4,5), 
                   B_width = c(1,6), B_height = c(4,6))
 (overlap_per_rectangle(end_list1)) # returns non NA Coordiantes as expected
@@ -223,20 +227,33 @@ end_list3 <- list(A_width = c(NA,3), A_height = c(4,5),
                   B_width = c(2,6), B_height = c(4,6))
 (overlap_per_rectangle(end_list3)) # Handles NAs as expected
 
-############# Test valid Rectangles function
+############# Function: test_valid_Rectangles
+### Inputs: object (the object that should be a valid Rectangles object)
+### Disciption: Check if the object is a valid Rectangles object returning …
+### … errors if it isn’t
+### Output: None (or error messages)
+
 test_valid_Rectangles <- function(object) {
   if (!check_class(object, "Rectangles")) stop(paste(as.character(bquote(object))
-                                                    , "must be a Rectangles Object"))
+                                                     , "must be a Rectangles Object"))
   if (!validObject(object)) stop(paste(as.character(bquote(object))
-                                      , "must be a valid Rectangles Object"))
+                                       , "must be a valid Rectangles Object"))
 }
 
-## my tests for test_valid_Rectangles
+## my tests: test_valid_Rectangles
 not_rec <- c(1,2)
 test_valid_Rectangles(not_rec)  # error message returned
 not_rec2 <- not_rec 
 class(not_rec2) <- "Rectangles" 
 test_valid_Rectangles(not_rec2) # error message returned
+
+############# Function: match_size
+### Inputs: big_matix, small_matrix 
+### (matrices of the intervals of the Rectangles to be overlapped)
+### Discription: recycle rows of the small matrix so it has the same …
+### … size as the big matrix
+### Output: small_matrix + repeated rows so it has the same size as …
+### big_matrix
 
 ## If the matrices are not the same size the small matrix must be recyled
 match_size <- function(big_matrix, small_matrix){
@@ -255,7 +272,7 @@ match_size <- function(big_matrix, small_matrix){
   # incease in size double_by -1 times as in the previous step small_matrix_bigger
   # already has one copy of small_matrix 
   for (i in 1:double_by - 1) small_matrix_bigger <- rbind(small_matrix_bigger,
-                                                       small_matrix)
+                                                          small_matrix)
   # cut off final rows to make the same size as the big matrix
   small_matrix_bigger <- small_matrix_bigger[c(1:n),]
   
@@ -270,25 +287,26 @@ match_size(rbind(c(1,2), c(2,3)),rbind(c(1,5), c(2,3)))
 # if they are the same size the second matrix is returned un changed
 
 ############################### Overlap ########################################
+
 overlap <- function(rectangle_A, rectangle_B){
   ## Rectangles objects must be valid rectanges
   test_valid_Rectangles(rectangle_A)
   test_valid_Rectangles(rectangle_B)
   
-  ## Get the coordinates of the endpoint of all rectangeles in A and B
+  ## Get the coordinates of the endpoint of all rectangles in A and B
   A_width_matrix <- rectangle_A@x@.Data
   A_height_matrix <- rectangle_A@y@.Data
   B_width_matrix <- rectangle_B@x@.Data
   B_height_matrix <- rectangle_B@y@.Data
   
-  # get the number of rectangles being compaired
+  # get the number of rectangles being compared
   n <- max(nrow(A_width_matrix), nrow(B_width_matrix)) 
   
-  ### Exeption: if A and B are different sizes use match_size
-  ## overwrite the matrice with recyled versions so they are the same size
-  # The width and height matrices for each rectangles obeject
+  ### Exception: if A and B are different sizes use match_size
+  ## overwrite the matrices with recycled versions so they are the same size
+  # The width and height matrices for each rectangles object
   # are always the same size as it is required by the class definition
-  # So only dimention needs to be tested
+  # So only dimension needs to be tested
   
   if (nrow(A_width_matrix) > nrow(B_width_matrix)) {
     B_width_matrix <- match_size(A_width_matrix, B_width_matrix)
@@ -300,11 +318,11 @@ overlap <- function(rectangle_A, rectangle_B){
     A_height_matrix <- match_size(B_height_matrix, A_height_matrix)
   }
   
-  # Matrice of endpoint for the overlap rectangles  
+  # Matrices of endpoint for the overlap rectangles  
   O_width_matrix <- matrix(NA, nrow = n, ncol = 2)
   O_height_matrix <- matrix(NA, nrow = n, ncol = 2)
   
-  ##### Fill with the endpoint of each indiviudal overlap matrix
+  ##### Fill with the endpoint of each individual overlap matrix
   for (i in 1:n) { 
     # Get list with all endpoint coordinates
     endpoints_list <- list(A_width = A_width_matrix[i,], 
@@ -318,11 +336,12 @@ overlap <- function(rectangle_A, rectangle_B){
     O_height_matrix[i,] <- o_endpoint_list[["height"]]
   }
   
-  #### Make a new Rectanles object containing each overlap rectangle
+  #### Make a new Rectangles object containing each overlap rectangle
   Rectangles(O_width_matrix,O_height_matrix)
   
 }
 
+################################# Official tests ############################
 #-------------------------------------------------------------------------------
 rect <- Rectangles(
   x = rbind(c(0, 1), c(-1, 2), c(0, 1)),
